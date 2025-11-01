@@ -688,23 +688,48 @@ export class UserModel {
   // Create indexes for better performance
   async createIndexes(): Promise<void> {
     try {
-      await this.collection.createIndex({ username: 1 }, { unique: true });
-      await this.collection.createIndex({ email: 1 }, { unique: true });
-      await this.collection.createIndex({ role: 1 });
-      await this.collection.createIndex({ organizationId: 1 });
-      await this.collection.createIndex({ organizationType: 1 });
-      await this.collection.createIndex({ isActive: 1 });
-      await this.collection.createIndex({ emailVerified: 1 });
-      await this.collection.createIndex({ createdAt: 1 });
-      await this.collection.createIndex({ lastLogin: 1 });
+      // Create indexes with proper error handling
+      const indexOperations = [
+        { key: { username: 1 }, options: { unique: true, sparse: true }, name: 'username' },
+        { key: { email: 1 }, options: { unique: true }, name: 'email' },
+        { key: { role: 1 }, options: {}, name: 'role' },
+        { key: { organizationId: 1 }, options: {}, name: 'organizationId' },
+        { key: { organizationType: 1 }, options: {}, name: 'organizationType' },
+        { key: { isActive: 1 }, options: {}, name: 'isActive' },
+        { key: { emailVerified: 1 }, options: {}, name: 'emailVerified' },
+        { key: { createdAt: 1 }, options: {}, name: 'createdAt' },
+        { key: { lastLogin: 1 }, options: {}, name: 'lastLogin' },
+        { key: { organizationId: 1, isActive: 1 }, options: {}, name: 'organizationId_isActive' },
+        { key: { role: 1, isActive: 1 }, options: {}, name: 'role_isActive' }
+      ];
+
+      for (const indexOp of indexOperations) {
+        try {
+          await this.collection.createIndex(indexOp.key as any, indexOp.options);
+          logger.info(`📊 Created index: ${indexOp.name}`);
+        } catch (error: any) {
+          if (error.code === 11000 || error.codeName === 'DuplicateKey') {
+            logger.warn(`⚠️ Index ${indexOp.name} already exists or has duplicate values, skipping...`);
+          } else if (error.code === 85 || error.codeName === 'IndexOptionsConflict') {
+            logger.warn(`⚠️ Index ${indexOp.name} has conflicting options, dropping and recreating...`);
+            try {
+              // Drop by index name instead of key
+              const indexName = Object.keys(indexOp.key).join('_') + '_1';
+              await this.collection.dropIndex(indexName);
+              await this.collection.createIndex(indexOp.key as any, indexOp.options);
+              logger.info(`📊 Recreated index: ${indexOp.name}`);
+            } catch (recreateError) {
+              logger.error(`❌ Failed to recreate index ${indexOp.name}:`, recreateError);
+            }
+          } else {
+            logger.error(`❌ Error creating index ${indexOp.name}:`, error);
+          }
+        }
+      }
       
-      // Compound indexes
-      await this.collection.createIndex({ organizationId: 1, isActive: 1 });
-      await this.collection.createIndex({ role: 1, isActive: 1 });
-      
-      logger.info('📊 User collection indexes created successfully');
+      logger.info('📊 User collection indexes setup completed');
     } catch (error) {
-      logger.error('❌ Error creating user indexes:', error);
+      logger.error('❌ Error in createIndexes method:', error);
     }
   }
 }
