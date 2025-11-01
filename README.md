@@ -9,17 +9,42 @@ The BlockTrade backend provides a comprehensive trade finance platform with bloc
 ### 1. Installation
 
 ```bash
-cd backend
+cd blocktrade-backend
 npm install
 ```
 
-### 2. Environment Setup
+### 2. Database Setup (MongoDB with Docker)
 
-Create a `.env` file in the backend directory:
+#### Option A: Automated Setup (Recommended)
+
+```bash
+# Run the automated setup script
+npm run db:setup
+```
+
+#### Option B: Manual Setup
+
+```bash
+# Create MongoDB volume
+docker volume create mongodb_data
+
+# Start MongoDB container
+docker run --name mongodb -d -p 27017:27017 -v mongodb_data:/data/db \
+  -e MONGO_INITDB_ROOT_USERNAME=admin \
+  -e MONGO_INITDB_ROOT_PASSWORD=password \
+  mongodb/mongodb-community-server
+
+# Test connection
+npm run test:db
+```
+
+### 3. Environment Setup
+
+The automated setup creates a `.env` file, or copy from `.env.example`:
 
 ```env
-# Database Configuration
-MONGODB_URI=mongodb://localhost:27017/blocktrade
+# MongoDB Configuration (Docker)
+MONGO_URI=mongodb://admin:password@localhost:27017/blocktrade?authSource=admin
 
 # JWT Configuration
 JWT_SECRET=your-super-secret-jwt-key-here
@@ -44,7 +69,16 @@ RATE_LIMIT_MAX_REQUESTS=100
 LOG_LEVEL=info
 ```
 
-### 3. Development Server
+### 4. Database Initialization
+
+```bash
+# Connect to MongoDB shell
+npm run db:shell
+
+# Follow the initialization commands in DATABASE_SETUP.md
+```
+
+### 5. Development Server
 
 ```bash
 # Start development server
@@ -53,6 +87,58 @@ npm run dev
 # Server will start on http://localhost:3000
 # API Documentation: http://localhost:3000/api-docs
 ```
+
+### 6. Test Setup
+
+```bash
+# Test database connection
+npm run test:db
+
+# Test API structure (without database)
+npm run test:simple
+
+# Test authentication system (requires MongoDB)
+npm run test:auth
+```
+
+## 🗄️ Database Management
+
+### MongoDB Docker Commands
+
+```bash
+# Database lifecycle
+npm run db:setup      # Initial setup (automated)
+npm run db:start      # Start MongoDB container
+npm run db:stop       # Stop MongoDB container
+npm run db:restart    # Restart MongoDB container
+
+# Database access
+npm run db:shell      # Connect to MongoDB shell
+npm run db:logs       # View MongoDB logs
+npm run test:db       # Test database connection
+
+# Data management
+npm run seed          # Seed database with sample data
+npm run seed:clear    # Clear database
+```
+
+### Manual Database Commands
+
+```bash
+# Connect to MongoDB shell
+docker exec -it mongodb mongosh -u admin -p password --authenticationDatabase admin
+
+# View databases
+show dbs
+
+# Use blocktrade database
+use blocktrade
+
+# View collections
+show collections
+```
+
+For complete database setup instructions, see [DATABASE_SETUP.md](DATABASE_SETUP.md).
 
 ### 4. Test Authentication System
 
