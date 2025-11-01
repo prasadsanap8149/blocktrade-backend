@@ -1,21 +1,363 @@
 # Postman Collections for BlockTrade API
 
-## Import Instructions
+## 📋 Overview
 
-1. Open Postman
-2. Click "Import" button
-3. Select "Raw text" tab
-4. Copy and paste the JSON collection below
-5. Click "Import" to add to your workspace
+This document provides comprehensive Postman collections for testing BlockTrade's Authentication and Letter of Credit APIs. The collections include complete authentication flows, user management, profile operations, and all LC lifecycle management.
 
-## Environment Variables
+## 🚀 Quick Start
 
-Before testing, create a Postman environment with these variables:
+### Import Instructions
 
-- `base_url`: http://localhost:3000/api (development) or https://api.blocktrade.com/api (production)
-- `auth_token`: (will be set automatically after login)
-- `user_id`: (will be set automatically after login)
-- `organization_id`: (will be set automatically after login)
+1. **Download Collection**: Use the complete Postman collection file: `blocktrade-auth-lc-api.postman_collection.json`
+2. **Import to Postman**:
+   - Open Postman
+   - Click "Import" button
+   - Select "Upload Files" tab
+   - Choose the downloaded collection file
+   - Click "Import"
+
+### Environment Setup
+
+Create a Postman environment with these variables:
+
+```json
+{
+  "name": "BlockTrade API Environment",
+  "values": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000/api",
+      "enabled": true
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "enabled": true
+    },
+    {
+      "key": "refresh_token",
+      "value": "",
+      "enabled": true
+    },
+    {
+      "key": "user_id",
+      "value": "",
+      "enabled": true
+    },
+    {
+      "key": "organization_id",
+      "value": "",
+      "enabled": true
+    },
+    {
+      "key": "lc_id",
+      "value": "",
+      "enabled": true
+    }
+  ]
+}
+```
+
+## 🔐 Authentication Endpoints Collection
+
+The authentication collection includes comprehensive user management and security features:
+
+### 👤 User Registration
+
+- **Register - Bank Admin**: Complete registration with admin privileges
+- **Register - Bank Officer**: Standard bank officer registration
+- **Register - Corporate User**: Corporate entity registration
+- **Error Testing**: Invalid data validation testing
+
+### 🔑 User Login
+
+- **Login - Bank Admin**: Admin authentication with token management
+- **Login - Bank Officer**: Officer authentication
+- **Login - Corporate User**: Corporate user authentication
+- **Login - Invalid Credentials**: Error handling validation
+- **Auto Token Management**: Automatic token storage and refresh
+
+### 👤 Profile Management
+
+- **Get Current User Profile**: Retrieve authenticated user details
+- **Update User Profile**: Modify profile information, preferences, notifications
+- **Profile Validation**: Input validation and error handling
+
+### 🔒 Password Management
+
+- **Change Password**: Secure password update for authenticated users
+- **Forgot Password**: Password reset request via email
+- **Reset Password**: Password reset using email token
+- **Password Validation**: Strength requirements testing
+
+### 🔄 Token Management
+
+- **Refresh Access Token**: Automatic token renewal
+- **Logout**: Secure session termination
+- **Token Expiry Handling**: Automatic token refresh workflows
+
+### ⚠️ Error Testing
+
+- **Duplicate Registration**: Username/email conflict handling
+- **Invalid Email Format**: Email validation testing
+- **Weak Password**: Password strength validation
+- **Unauthorized Access**: Authentication requirement testing
+
+## 📄 Letter of Credit Collection
+
+Comprehensive LC lifecycle management with all business operations:
+
+### 📋 LC Operations
+
+- **Create Letter of Credit**: Full LC creation with trade details
+- **Get LC by ID**: Detailed LC information retrieval
+- **Get All LCs**: Paginated LC listing with filters
+- **Search LCs**: Advanced filtering and search capabilities
+
+### 🔄 Status Management
+
+- **Update LC Status - Issue**: Bank approval and issuance
+- **Update LC Status - Advise**: Advising bank notification
+- **Update LC Status - Confirm**: LC confirmation process
+- **Update LC Status - Reject**: Rejection with detailed reasons
+
+### 📊 Analytics & Search
+
+- **Search by Beneficiary**: Beneficiary-based filtering
+- **Search by Date Range**: Time-based LC queries
+- **Get LC Statistics**: Comprehensive analytics (future implementation)
+
+### ⚠️ Error Scenarios
+
+- **Create LC - Invalid Data**: Validation error testing
+- **Get Non-existent LC**: 404 error handling
+- **Update Status - Invalid Transition**: Business rule validation
+
+## 👥 User Management Collection
+
+Administrative user management capabilities:
+
+### Admin Functions
+
+- **Get All Users**: User listing with pagination and filters
+- **Update User Status**: Account activation/deactivation
+- **Permission Management**: Role-based access control testing
+
+## 🛠️ Testing Workflows
+
+### 1. Complete Authentication Flow
+
+```javascript
+// Pre-request Script for automatic testing
+pm.test("Complete Auth Flow", function () {
+  // 1. Register new user
+  pm.sendRequest(
+    {
+      url: pm.environment.get("base_url") + "/auth/register",
+      method: "POST",
+      header: { "Content-Type": "application/json" },
+      body: {
+        mode: "raw",
+        raw: JSON.stringify({
+          username: "test_user_" + Date.now(),
+          email: "test@example.com",
+          password: "SecurePass123!",
+          confirmPassword: "SecurePass123!",
+          firstName: "Test",
+          lastName: "User",
+          role: "bank_officer",
+          organizationId: "123e4567-e89b-12d3-a456-426614174000",
+          organizationName: "Test Bank",
+          organizationType: "bank",
+          acceptTerms: true,
+        }),
+      },
+    },
+    function (err, res) {
+      if (res.code === 201) {
+        const data = res.json().data;
+        pm.environment.set("access_token", data.tokens.accessToken);
+        pm.environment.set("user_id", data.user.id);
+        console.log("✅ Registration successful");
+      }
+    }
+  );
+});
+```
+
+### 2. LC Lifecycle Testing
+
+```javascript
+// Complete LC workflow test
+const testLCLifecycle = {
+  // Step 1: Create LC
+  createLC: function () {
+    pm.sendRequest(
+      {
+        url: pm.environment.get("base_url") + "/lc",
+        method: "POST",
+        header: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + pm.environment.get("access_token"),
+        },
+        body: {
+          mode: "raw",
+          raw: JSON.stringify({
+            type: "commercial",
+            applicant: {
+              name: "Test Applicant Corp",
+              // ... other details
+            },
+            amount: { value: 100000, currency: "USD" },
+            // ... other LC details
+          }),
+        },
+      },
+      function (err, res) {
+        if (res.code === 201) {
+          pm.environment.set("lc_id", res.json().data.id);
+          console.log("✅ LC Created:", res.json().data.lcNumber);
+        }
+      }
+    );
+  },
+
+  // Step 2: Update Status
+  updateStatus: function (status, reason) {
+    pm.sendRequest(
+      {
+        url:
+          pm.environment.get("base_url") +
+          "/lc/" +
+          pm.environment.get("lc_id") +
+          "/status",
+        method: "PATCH",
+        header: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + pm.environment.get("access_token"),
+        },
+        body: {
+          mode: "raw",
+          raw: JSON.stringify({ status: status, reason: reason }),
+        },
+      },
+      function (err, res) {
+        if (res.code === 200) {
+          console.log("✅ LC Status Updated:", status);
+        }
+      }
+    );
+  },
+};
+```
+
+## 📋 Environment Configuration
+
+### Development Environment
+
+```json
+{
+  "id": "dev-environment-id",
+  "name": "BlockTrade Development",
+  "values": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000/api",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "frontend_url",
+      "value": "http://localhost:4200",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "refresh_token",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "user_id",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "organization_id",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "lc_id",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    }
+  ]
+}
+```
+
+### Production Environment
+
+```json
+{
+  "id": "prod-environment-id",
+  "name": "BlockTrade Production",
+  "values": [
+    {
+      "key": "base_url",
+      "value": "https://api.blocktrade.com/api",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "frontend_url",
+      "value": "https://app.blocktrade.com",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "refresh_token",
+      "value": "",
+      "enabled": true,
+      "type": "secret"
+    },
+    {
+      "key": "user_id",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "organization_id",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    },
+    {
+      "key": "lc_id",
+      "value": "",
+      "enabled": true,
+      "type": "default"
+    }
+  ]
+}
+```
 
 ## BlockTrade API Collection
 

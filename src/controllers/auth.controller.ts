@@ -25,7 +25,7 @@ export class AuthController {
     this.initializeUserModel();
   }
 
-  private async initializeUserModel() {
+  public async initializeUserModel() {
     try {
       await database.connect();
       this.userModel = new UserModel();

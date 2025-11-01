@@ -208,37 +208,270 @@ Production: https://api.blocktrade.com/api
 
 ### Authentication Endpoints
 
-#### POST /auth/login
+#### POST /auth/register
+
+Register a new user account.
 
 ```typescript
 // Request
 {
-  "email": "john.doe@bank.com",
-  "password": "securePassword123"
+  "username": "bank_admin_001",
+  "email": "admin@globalbank.com",
+  "password": "SecurePass123!",
+  "confirmPassword": "SecurePass123!",
+  "firstName": "John",
+  "lastName": "Admin",
+  "role": "bank_admin",
+  "organizationId": "123e4567-e89b-12d3-a456-426614174000",
+  "organizationName": "Global Bank Corp",
+  "organizationType": "bank",
+  "permissions": ["lc:create", "lc:view", "lc:edit", "user:manage"],
+  "phone": "+1234567890",
+  "acceptTerms": true,
+  "address": {
+    "street": "123 Banking Street",
+    "city": "New York",
+    "state": "NY",
+    "country": "USA",
+    "postalCode": "10001"
+  }
 }
 
 // Response
 {
   "success": true,
+  "message": "User registered successfully",
   "data": {
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "expiresIn": 3600,
     "user": {
       "id": "123e4567-e89b-12d3-a456-426614174000",
-      "email": "john.doe@bank.com",
+      "username": "bank_admin_001",
+      "email": "admin@globalbank.com",
       "firstName": "John",
-      "lastName": "Doe",
+      "lastName": "Admin",
       "role": "bank_admin",
-      "organizationId": "123e4567-e89b-12d3-a456-426614174001",
-      "organizationName": "ABC Bank",
-      "permissions": ["lc:create", "lc:approve", "user:manage"]
+      "organizationId": "123e4567-e89b-12d3-a456-426614174000",
+      "organizationName": "Global Bank Corp",
+      "organizationType": "bank",
+      "permissions": ["lc:create", "lc:view", "lc:edit", "user:manage"],
+      "isActive": true,
+      "emailVerified": false,
+      "createdAt": "2024-11-01T10:30:00.000Z"
+    },
+    "tokens": {
+      "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+      "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+      "expiresIn": 3600
     }
   }
 }
 ```
 
+#### POST /auth/login
+
+Authenticate user and get access tokens.
+
+```typescript
+// Request
+{
+  "username": "bank_admin_001",
+  "password": "SecurePass123!",
+  "mfaCode": "123456", // Optional, required if MFA is enabled
+  "rememberMe": true   // Optional, extends token expiry
+}
+
+// Response
+{
+  "success": true,
+  "message": "Login successful",
+  "data": {
+    "user": {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "username": "bank_admin_001",
+      "email": "admin@globalbank.com",
+      "firstName": "John",
+      "lastName": "Admin",
+      "role": "bank_admin",
+      "organizationId": "123e4567-e89b-12d3-a456-426614174000",
+      "organizationName": "Global Bank Corp",
+      "organizationType": "bank",
+      "permissions": ["lc:create", "lc:view", "lc:edit", "user:manage"],
+      "lastLogin": "2024-11-01T09:15:00.000Z",
+      "isActive": true,
+      "emailVerified": true
+    },
+    "tokens": {
+      "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+      "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+      "expiresIn": 3600
+    }
+  }
+}
+```
+
+#### GET /auth/me
+
+Get current authenticated user profile.
+
+```typescript
+// Request Headers
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+// Response
+{
+  "success": true,
+  "message": "User profile retrieved successfully",
+  "data": {
+    "user": {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "username": "bank_admin_001",
+      "email": "admin@globalbank.com",
+      "firstName": "John",
+      "lastName": "Admin",
+      "role": "bank_admin",
+      "organizationId": "123e4567-e89b-12d3-a456-426614174000",
+      "organizationName": "Global Bank Corp",
+      "organizationType": "bank",
+      "permissions": ["lc:create", "lc:view", "lc:edit", "user:manage"],
+      "phone": "+1234567890",
+      "address": {
+        "street": "123 Banking Street",
+        "city": "New York",
+        "state": "NY",
+        "country": "USA",
+        "postalCode": "10001"
+      },
+      "bio": "Senior Banking Administrator",
+      "timezone": "America/New_York",
+      "language": "en",
+      "notifications": {
+        "email": true,
+        "sms": false,
+        "push": true,
+        "marketing": false
+      },
+      "isActive": true,
+      "emailVerified": true,
+      "emailVerifiedAt": "2024-11-01T10:35:00.000Z",
+      "lastLogin": "2024-11-01T09:15:00.000Z",
+      "mfaEnabled": false,
+      "createdAt": "2024-11-01T10:30:00.000Z",
+      "updatedAt": "2024-11-01T11:45:00.000Z"
+    }
+  }
+}
+```
+
+#### PUT /auth/profile
+
+Update user profile information.
+
+```typescript
+// Request Headers
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+// Request
+{
+  "firstName": "John Updated",
+  "lastName": "Admin Updated",
+  "phone": "+1234567899",
+  "bio": "Senior Banking Administrator with 10+ years experience",
+  "timezone": "America/New_York",
+  "language": "en",
+  "notifications": {
+    "email": true,
+    "sms": false,
+    "push": true,
+    "marketing": false
+  },
+  "address": {
+    "street": "456 Updated Banking Street",
+    "city": "New York",
+    "state": "NY",
+    "country": "USA",
+    "postalCode": "10002"
+  }
+}
+
+// Response
+{
+  "success": true,
+  "message": "Profile updated successfully",
+  "data": {
+    "user": {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "username": "bank_admin_001",
+      "email": "admin@globalbank.com",
+      "firstName": "John Updated",
+      "lastName": "Admin Updated",
+      "bio": "Senior Banking Administrator with 10+ years experience",
+      "phone": "+1234567899",
+      "updatedAt": "2024-11-01T12:30:00.000Z"
+    }
+  }
+}
+```
+
+#### POST /auth/change-password
+
+Change password for authenticated user.
+
+```typescript
+// Request Headers
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+// Request
+{
+  "currentPassword": "SecurePass123!",
+  "newPassword": "NewSecurePass123!",
+  "confirmPassword": "NewSecurePass123!"
+}
+
+// Response
+{
+  "success": true,
+  "message": "Password changed successfully"
+}
+```
+
+#### POST /auth/forgot-password
+
+Request password reset email.
+
+```typescript
+// Request
+{
+  "email": "admin@globalbank.com"
+}
+
+// Response
+{
+  "success": true,
+  "message": "If an account with that email exists, we've sent a password reset link."
+}
+```
+
+#### POST /auth/reset-password
+
+Reset password using reset token.
+
+```typescript
+// Request
+{
+  "token": "reset-token-from-email",
+  "newPassword": "NewSecurePass123!",
+  "confirmPassword": "NewSecurePass123!"
+}
+
+// Response
+{
+  "success": true,
+  "message": "Password reset successful. You can now login with your new password."
+}
+```
+
 #### POST /auth/refresh
+
+Refresh access token using refresh token.
 
 ```typescript
 // Request
@@ -249,14 +482,20 @@ Production: https://api.blocktrade.com/api
 // Response
 {
   "success": true,
+  "message": "Token refreshed successfully",
   "data": {
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "expiresIn": 3600
+    "tokens": {
+      "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+      "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+      "expiresIn": 3600
+    }
   }
 }
 ```
 
 #### POST /auth/logout
+
+Logout current user.
 
 ```typescript
 // Request Headers
@@ -265,7 +504,8 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 // Response
 {
   "success": true,
-  "message": "Logged out successfully"
+  "message": "Logout successful",
+  "data": null
 }
 ```
 

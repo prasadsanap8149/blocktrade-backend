@@ -8,6 +8,7 @@ import helmet from 'helmet';
 import compression from 'compression';
 import { createServer } from 'http';
 import { logger } from './utils/logger';
+import { database } from './config/database';
 import { errorHandler } from './middleware/errorHandler';
 import { rateLimiter } from './middleware/rateLimiter';
 import { authRoutes } from './routes/auth.routes';
@@ -63,7 +64,7 @@ app.get('/health', (req, res) => {
 // API routes
 const apiPrefix = process.env.API_PREFIX || '/api';
 app.use(`${apiPrefix}/auth`, authRoutes);
-app.use(`${apiPrefix}/letters-of-credit`, letterOfCreditRoutes);
+app.use(`${apiPrefix}/lc`, letterOfCreditRoutes);
 app.use(`${apiPrefix}/documents`, documentRoutes);
 app.use(`${apiPrefix}/kyc`, kycRoutes);
 app.use(`${apiPrefix}/users`, userRoutes);
@@ -102,14 +103,37 @@ process.on('SIGINT', () => {
 });
 
 // Start server
-server.listen(PORT, () => {
-  logger.info(`🚀 BlockTrade Backend Server running on port ${PORT}`);
-  logger.info(`📑 Environment: ${NODE_ENV}`);
-  logger.info(`🌐 API Base URL: http://localhost:${PORT}${apiPrefix}`);
-  
-  if (NODE_ENV === 'development' && process.env.ENABLE_SWAGGER === 'true') {
-    logger.info(`📖 API Documentation: http://localhost:${PORT}/api-docs`);
+async function startServer() {
+  try {
+    // Connect to database
+    logger.info('🔌 Connecting to MongoDB...');
+    await database.connect();
+    
+    // Initialize models and create indexes
+    const { AuthController } = await import('./controllers/auth.controller');
+    const { default: LetterOfCreditController } = await import('./controllers/letterOfCredit.controller');
+    
+    const authController = new AuthController();
+    const lcController = new LetterOfCreditController();
+    
+    await authController.initializeUserModel();
+    await lcController.initializeLCModel();
+    
+    server.listen(PORT, () => {
+      logger.info(`🚀 BlockTrade Backend Server running on port ${PORT}`);
+      logger.info(`📑 Environment: ${NODE_ENV}`);
+      logger.info(`🌐 API Base URL: http://localhost:${PORT}${apiPrefix}`);
+      
+      if (NODE_ENV === 'development' && process.env.ENABLE_SWAGGER === 'true') {
+        logger.info(`📖 API Documentation: http://localhost:${PORT}/api-docs`);
+      }
+    });
+  } catch (error) {
+    logger.error('❌ Failed to start server:', error);
+    process.exit(1);
   }
-});
+}
+
+startServer();
 
 export default app;

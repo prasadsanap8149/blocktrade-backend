@@ -1,0 +1,596 @@
+{
+  "info": {
+    "name": "BlockTrade Backend - Letter of Credit API",
+    "description": "Complete API collection for testing BlockTrade Letter of Credit functionality",
+    "version": "1.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000/api",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "lc_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login - Bank Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const response = pm.response.json();",
+                  "  if (response.success && response.data.tokens) {",
+                  "    pm.environment.set('access_token', response.data.tokens.accessToken);",
+                  "    pm.collectionVariables.set('access_token', response.data.tokens.accessToken);",
+                  "    console.log('Access token saved:', response.data.tokens.accessToken);",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin_bank_admin\",\n  \"password\": \"Admin123!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Login with bank admin credentials"
+          }
+        },
+        {
+          "name": "Login - Corporate Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const response = pm.response.json();",
+                  "  if (response.success && response.data.tokens) {",
+                  "    pm.environment.set('access_token', response.data.tokens.accessToken);",
+                  "    pm.collectionVariables.set('access_token', response.data.tokens.accessToken);",
+                  "    console.log('Access token saved:', response.data.tokens.accessToken);",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin_corp_admin\",\n  \"password\": \"Corporate123!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Login with corporate admin credentials"
+          }
+        },
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/profile",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "profile"]
+            },
+            "description": "Get current user profile"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Letter of Credit",
+      "item": [
+        {
+          "name": "Create LC - Sample Trade",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const response = pm.response.json();",
+                  "  if (response.success && response.data.id) {",
+                  "    pm.collectionVariables.set('lc_id', response.data.id);",
+                  "    console.log('LC ID saved:', response.data.id);",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"applicantId\": \"{{applicant_org_id}}\",\n  \"beneficiaryId\": \"{{beneficiary_org_id}}\",\n  \"issuingBankId\": \"{{issuing_bank_id}}\",\n  \"amount\": 250000,\n  \"currency\": \"USD\",\n  \"description\": \"Purchase of 1000 metric tons of premium grade steel coils as per specifications outlined in purchase order PO-2024-1001. Goods to be delivered CIF New York port with insurance coverage as per attached documentation.\",\n  \"expiryDate\": \"2025-03-15\",\n  \"lastShipmentDate\": \"2025-02-28\",\n  \"presentationPeriod\": 21,\n  \"incoterms\": \"CIF\",\n  \"partialShipments\": false,\n  \"transshipment\": true,\n  \"requiredDocuments\": [\n    {\n      \"documentType\": \"Commercial Invoice\",\n      \"required\": true,\n      \"copies\": 3,\n      \"originalRequired\": true,\n      \"description\": \"Detailed commercial invoice showing goods description, quantity, unit price, and total amount\"\n    },\n    {\n      \"documentType\": \"Bill of Lading\",\n      \"required\": true,\n      \"copies\": 3,\n      \"originalRequired\": true,\n      \"description\": \"Clean on board ocean bill of lading made out to order and blank endorsed\"\n    },\n    {\n      \"documentType\": \"Packing List\",\n      \"required\": true,\n      \"copies\": 2,\n      \"originalRequired\": false,\n      \"description\": \"Detailed packing list showing contents of each package\"\n    },\n    {\n      \"documentType\": \"Certificate of Origin\",\n      \"required\": true,\n      \"copies\": 2,\n      \"originalRequired\": true,\n      \"description\": \"Certificate of origin issued by authorized chamber of commerce\"\n    },\n    {\n      \"documentType\": \"Insurance Certificate\",\n      \"required\": true,\n      \"copies\": 2,\n      \"originalRequired\": true,\n      \"description\": \"Marine insurance certificate covering 110% of invoice value against all risks\"\n    },\n    {\n      \"documentType\": \"Quality Certificate\",\n      \"required\": true,\n      \"copies\": 2,\n      \"originalRequired\": true,\n      \"description\": \"Quality inspection certificate issued by SGS or equivalent international inspection agency\"\n    }\n  ],\n  \"tolerance\": {\n    \"amountPlus\": 5,\n    \"amountMinus\": 5\n  },\n  \"specialInstructions\": \"1. All documents must be presented within 21 days after shipment date\\n2. Partial shipments are not allowed\\n3. Transshipment is permitted\\n4. All charges outside issuing bank are for account of beneficiary\\n5. Documents must be presented in English or accompanied by certified English translation\\n6. Beneficiary must notify applicant and issuing bank of shipment within 48 hours of loading\\n7. LC is subject to UCP 600 latest revision\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/lc",
+              "host": ["{{base_url}}"],
+              "path": ["lc"]
+            },
+            "description": "Create a new Letter of Credit for steel coil trade"
+          }
+        },
+        {
+          "name": "Get All LCs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/lc?page=1&limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["lc"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Get list of all Letters of Credit with pagination"
+          }
+        },
+        {
+          "name": "Get LC by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/lc/{{lc_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["lc", "{{lc_id}}"]
+            },
+            "description": "Get detailed information about a specific Letter of Credit"
+          }
+        },
+        {
+          "name": "Search LCs - By Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/lc?status=draft,submitted&page=1&limit=5",
+              "host": ["{{base_url}}"],
+              "path": ["lc"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "draft,submitted"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "5"
+                }
+              ]
+            },
+            "description": "Search Letters of Credit by status"
+          }
+        },
+        {
+          "name": "Search LCs - By Currency and Amount",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/lc?currency=USD&amountMin=100000&amountMax=500000",
+              "host": ["{{base_url}}"],
+              "path": ["lc"],
+              "query": [
+                {
+                  "key": "currency",
+                  "value": "USD"
+                },
+                {
+                  "key": "amountMin",
+                  "value": "100000"
+                },
+                {
+                  "key": "amountMax",
+                  "value": "500000"
+                }
+              ]
+            },
+            "description": "Search Letters of Credit by currency and amount range"
+          }
+        },
+        {
+          "name": "Update LC - Basic Info",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 275000,\n  \"description\": \"Purchase of 1100 metric tons of premium grade steel coils as per updated specifications outlined in amended purchase order PO-2024-1001-A. Goods to be delivered CIF New York port with insurance coverage as per attached documentation.\",\n  \"specialInstructions\": \"1. All documents must be presented within 21 days after shipment date\\n2. Partial shipments are not allowed\\n3. Transshipment is permitted\\n4. All charges outside issuing bank are for account of beneficiary\\n5. Documents must be presented in English or accompanied by certified English translation\\n6. Beneficiary must notify applicant and issuing bank of shipment within 48 hours of loading\\n7. LC is subject to UCP 600 latest revision\\n8. UPDATED: Quantity increased to 1100 MT as per purchase order amendment\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/lc/{{lc_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["lc", "{{lc_id}}"]
+            },
+            "description": "Update Letter of Credit details (only for draft/submitted LCs)"
+          }
+        },
+        {
+          "name": "Submit LC for Review",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"newStatus\": \"submitted\",\n  \"comments\": \"LC application completed and submitted for bank review. All required documentation and terms have been verified by applicant.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/lc/{{lc_id}}/status",
+              "host": ["{{base_url}}"],
+              "path": ["lc", "{{lc_id}}", "status"]
+            },
+            "description": "Submit LC for bank review"
+          }
+        },
+        {
+          "name": "Bank Review - Under Review",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"newStatus\": \"under_review\",\n  \"comments\": \"LC application received and is now under bank review. Credit assessment and compliance checks are being performed.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/lc/{{lc_id}}/status",
+              "host": ["{{base_url}}"],
+              "path": ["lc", "{{lc_id}}", "status"]
+            },
+            "description": "Mark LC as under review by bank"
+          }
+        },
+        {
+          "name": "Bank Approval",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"newStatus\": \"approved\",\n  \"comments\": \"LC application has been approved. Credit limit verified, terms are acceptable, and all compliance requirements met. Ready for issuance.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/lc/{{lc_id}}/status",
+              "host": ["{{base_url}}"],
+              "path": ["lc", "{{lc_id}}", "status"]
+            },
+            "description": "Approve LC application"
+          }
+        },
+        {
+          "name": "Issue LC",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"newStatus\": \"issued\",\n  \"comments\": \"Letter of Credit has been officially issued and is now active. LC number assigned and notifications sent to all parties.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/lc/{{lc_id}}/status",
+              "host": ["{{base_url}}"],
+              "path": ["lc", "{{lc_id}}", "status"]
+            },
+            "description": "Issue the Letter of Credit"
+          }
+        },
+        {
+          "name": "Documents Received",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"newStatus\": \"documents_received\",\n  \"comments\": \"Documents have been received from beneficiary. Document package includes: Commercial Invoice, Bill of Lading, Packing List, Certificate of Origin, Insurance Certificate, and Quality Certificate.\",\n  \"supportingDocuments\": [\"doc_001\", \"doc_002\", \"doc_003\", \"doc_004\", \"doc_005\", \"doc_006\"]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/lc/{{lc_id}}/status",
+              "host": ["{{base_url}}"],
+              "path": ["lc", "{{lc_id}}", "status"]
+            },
+            "description": "Mark documents as received from beneficiary"
+          }
+        },
+        {
+          "name": "Examine Documents",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"newStatus\": \"documents_examining\",\n  \"comments\": \"Document examination in progress. Checking compliance with LC terms, document authenticity, and completeness.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/lc/{{lc_id}}/status",
+              "host": ["{{base_url}}"],
+              "path": ["lc", "{{lc_id}}", "status"]
+            },
+            "description": "Start document examination process"
+          }
+        },
+        {
+          "name": "Accept Documents",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"newStatus\": \"documents_accepted\",\n  \"comments\": \"All documents have been examined and found to be in compliance with LC terms. No discrepancies identified. Ready for payment authorization.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/lc/{{lc_id}}/status",
+              "host": ["{{base_url}}"],
+              "path": ["lc", "{{lc_id}}", "status"]
+            },
+            "description": "Accept documents after examination"
+          }
+        },
+        {
+          "name": "Authorize Payment",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"newStatus\": \"payment_authorized\",\n  \"comments\": \"Payment has been authorized for USD 275,000. Funds will be transferred to beneficiary account as per LC terms.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/lc/{{lc_id}}/status",
+              "host": ["{{base_url}}"],
+              "path": ["lc", "{{lc_id}}", "status"]
+            },
+            "description": "Authorize payment to beneficiary"
+          }
+        },
+        {
+          "name": "Complete Payment",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"newStatus\": \"payment_completed\",\n  \"comments\": \"Payment of USD 275,000 has been successfully completed and transferred to beneficiary. LC transaction completed successfully.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/lc/{{lc_id}}/status",
+              "host": ["{{base_url}}"],
+              "path": ["lc", "{{lc_id}}", "status"]
+            },
+            "description": "Mark payment as completed"
+          }
+        },
+        {
+          "name": "Get LC Statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/lc/statistics",
+              "host": ["{{base_url}}"],
+              "path": ["lc", "statistics"]
+            },
+            "description": "Get statistical data about Letters of Credit"
+          }
+        },
+        {
+          "name": "Delete LC (Draft Only)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/lc/{{lc_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["lc", "{{lc_id}}"]
+            },
+            "description": "Delete a Letter of Credit (only draft LCs can be deleted)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Error Testing",
+      "item": [
+        {
+          "name": "Create LC - Missing Required Fields",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"applicantId\": \"{{applicant_org_id}}\",\n  \"beneficiaryId\": \"{{beneficiary_org_id}}\",\n  \"amount\": 100000,\n  \"currency\": \"USD\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/lc",
+              "host": ["{{base_url}}"],
+              "path": ["lc"]
+            },
+            "description": "Test validation errors with missing required fields"
+          }
+        },
+        {
+          "name": "Create LC - Invalid Currency",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"applicantId\": \"{{applicant_org_id}}\",\n  \"beneficiaryId\": \"{{beneficiary_org_id}}\",\n  \"issuingBankId\": \"{{issuing_bank_id}}\",\n  \"amount\": 100000,\n  \"currency\": \"XYZ\",\n  \"description\": \"Test description\",\n  \"expiryDate\": \"2025-03-15\",\n  \"incoterms\": \"FOB\",\n  \"requiredDocuments\": [\n    {\n      \"documentType\": \"Commercial Invoice\",\n      \"required\": true,\n      \"copies\": 1\n    }\n  ],\n  \"tolerance\": {\n    \"amountPlus\": 5,\n    \"amountMinus\": 5\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/lc",
+              "host": ["{{base_url}}"],
+              "path": ["lc"]
+            },
+            "description": "Test validation with invalid currency"
+          }
+        },
+        {
+          "name": "Update LC - Invalid Status Transition",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"newStatus\": \"payment_completed\",\n  \"comments\": \"Invalid transition test\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/lc/{{lc_id}}/status",
+              "host": ["{{base_url}}"],
+              "path": ["lc", "{{lc_id}}", "status"]
+            },
+            "description": "Test invalid status transition"
+          }
+        },
+        {
+          "name": "Get LC - Invalid ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/lc/invalid_id_12345",
+              "host": ["{{base_url}}"],
+              "path": ["lc", "invalid_id_12345"]
+            },
+            "description": "Test with invalid LC ID"
+          }
+        }
+      ]
+    }
+  ]
+}

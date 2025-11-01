@@ -1,0 +1,1109 @@
+{
+  "info": {
+    "name": "BlockTrade Backend - Complete Auth & LC API",
+    "description": "Complete API collection for BlockTrade Authentication and Letter of Credit system. This collection provides comprehensive testing for all authentication flows and LC operations to help frontend developers integrate the APIs.\n\n## 🔐 Authentication Flow:\n1. **Register** - Create new user account\n2. **Login** - Get access and refresh tokens\n3. **Use Protected Endpoints** - Include Bearer token in Authorization header\n4. **Refresh Token** - Get new access token when expired\n\n## 📋 Available Modules:\n- **Authentication**: Register, Login, Profile Management, Password Management\n- **Letter of Credit**: Create, View, Update, Search, Status Management\n- **User Management**: Admin functions (Coming Soon)\n\n## 🚀 Getting Started:\n1. Set your `base_url` environment variable (default: http://localhost:3000)\n2. Run the Login request to get your access token\n3. The token will be automatically saved and used for subsequent requests\n\n## 🏦 Test Users:\n- **Bank Admin**: admin@globalbank.com / SecurePass123!\n- **Bank Officer**: officer@globalbank.com / SecurePass123!\n- **Corporate User**: corporate@tradecorp.com / SecurePass123!\n\n## ⚙️ Environment Variables:\n- `base_url`: API base URL\n- `access_token`: JWT access token (auto-set)\n- `refresh_token`: JWT refresh token (auto-set)\n- `user_id`: Current user ID (auto-set)\n- `organization_id`: Current organization ID (auto-set)",
+    "version": "1.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000/api",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refresh_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "user_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "organization_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "lc_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "🔐 Authentication",
+      "description": "Complete authentication system including registration, login, profile management, and password operations.",
+      "item": [
+        {
+          "name": "👤 User Registration",
+          "item": [
+            {
+              "name": "Register - Bank Admin",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 201) {",
+                      "  const response = pm.response.json();",
+                      "  if (response.success && response.data.tokens) {",
+                      "    pm.environment.set('access_token', response.data.tokens.accessToken);",
+                      "    pm.environment.set('refresh_token', response.data.tokens.refreshToken);",
+                      "    pm.collectionVariables.set('access_token', response.data.tokens.accessToken);",
+                      "    pm.collectionVariables.set('refresh_token', response.data.tokens.refreshToken);",
+                      "    ",
+                      "    if (response.data.user) {",
+                      "      pm.environment.set('user_id', response.data.user.id);",
+                      "      pm.environment.set('organization_id', response.data.user.organizationId);",
+                      "      pm.collectionVariables.set('user_id', response.data.user.id);",
+                      "      pm.collectionVariables.set('organization_id', response.data.user.organizationId);",
+                      "    }",
+                      "    ",
+                      "    console.log('✅ Registration successful! Tokens and user info saved.');",
+                      "  }",
+                      "} else {",
+                      "  console.log('❌ Registration failed:', pm.response.json());",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"username\": \"bank_admin_001\",\n  \"email\": \"admin@globalbank.com\",\n  \"password\": \"SecurePass123!\",\n  \"confirmPassword\": \"SecurePass123!\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Admin\",\n  \"role\": \"bank_admin\",\n  \"organizationId\": \"123e4567-e89b-12d3-a456-426614174000\",\n  \"organizationName\": \"Global Bank Corp\",\n  \"organizationType\": \"bank\",\n  \"permissions\": [\"lc:create\", \"lc:view\", \"lc:edit\", \"lc:delete\", \"user:manage\", \"document:verify\"],\n  \"phone\": \"+1234567890\",\n  \"acceptTerms\": true,\n  \"address\": {\n    \"street\": \"123 Banking Street\",\n    \"city\": \"New York\",\n    \"state\": \"NY\",\n    \"country\": \"USA\",\n    \"postalCode\": \"10001\"\n  }\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/auth/register",
+                  "host": ["{{base_url}}"],
+                  "path": ["auth", "register"]
+                },
+                "description": "Register a new bank administrator user. This endpoint creates a new user account and immediately logs them in, returning access and refresh tokens."
+              }
+            },
+            {
+              "name": "Register - Bank Officer",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"username\": \"bank_officer_001\",\n  \"email\": \"officer@globalbank.com\",\n  \"password\": \"SecurePass123!\",\n  \"confirmPassword\": \"SecurePass123!\",\n  \"firstName\": \"Jane\",\n  \"lastName\": \"Officer\",\n  \"role\": \"bank_officer\",\n  \"organizationId\": \"123e4567-e89b-12d3-a456-426614174000\",\n  \"organizationName\": \"Global Bank Corp\",\n  \"organizationType\": \"bank\",\n  \"permissions\": [\"lc:create\", \"lc:view\", \"lc:edit\", \"document:verify\"],\n  \"phone\": \"+1234567891\",\n  \"acceptTerms\": true\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/auth/register",
+                  "host": ["{{base_url}}"],
+                  "path": ["auth", "register"]
+                },
+                "description": "Register a new bank officer user with limited permissions."
+              }
+            },
+            {
+              "name": "Register - Corporate User",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"username\": \"corporate_user_001\",\n  \"email\": \"corporate@tradecorp.com\",\n  \"password\": \"SecurePass123!\",\n  \"confirmPassword\": \"SecurePass123!\",\n  \"firstName\": \"Mike\",\n  \"lastName\": \"Trade\",\n  \"role\": \"corporate_user\",\n  \"organizationId\": \"456e7890-f12b-34c5-d678-901234567890\",\n  \"organizationName\": \"TradeCorp International\",\n  \"organizationType\": \"corporate\",\n  \"permissions\": [\"lc:create\", \"lc:view\", \"document:upload\"],\n  \"phone\": \"+1234567892\",\n  \"acceptTerms\": true\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/auth/register",
+                  "host": ["{{base_url}}"],
+                  "path": ["auth", "register"]
+                },
+                "description": "Register a new corporate user for trade operations."
+              }
+            }
+          ]
+        },
+        {
+          "name": "🔑 User Login",
+          "item": [
+            {
+              "name": "Login - Bank Admin",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 200) {",
+                      "  const response = pm.response.json();",
+                      "  if (response.success && response.data.tokens) {",
+                      "    pm.environment.set('access_token', response.data.tokens.accessToken);",
+                      "    pm.environment.set('refresh_token', response.data.tokens.refreshToken);",
+                      "    pm.collectionVariables.set('access_token', response.data.tokens.accessToken);",
+                      "    pm.collectionVariables.set('refresh_token', response.data.tokens.refreshToken);",
+                      "    ",
+                      "    if (response.data.user) {",
+                      "      pm.environment.set('user_id', response.data.user.id);",
+                      "      pm.environment.set('organization_id', response.data.user.organizationId);",
+                      "      pm.collectionVariables.set('user_id', response.data.user.id);",
+                      "      pm.collectionVariables.set('organization_id', response.data.user.organizationId);",
+                      "    }",
+                      "    ",
+                      "    console.log('✅ Login successful! Tokens and user info saved.');",
+                      "    console.log('👤 User:', response.data.user.username, '-', response.data.user.role);",
+                      "    console.log('🏢 Organization:', response.data.user.organizationName);",
+                      "  }",
+                      "} else {",
+                      "  console.log('❌ Login failed:', pm.response.json());",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"username\": \"bank_admin_001\",\n  \"password\": \"SecurePass123!\",\n  \"rememberMe\": true\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/auth/login",
+                  "host": ["{{base_url}}"],
+                  "path": ["auth", "login"]
+                },
+                "description": "Login with bank administrator credentials. Returns access and refresh tokens for API authentication."
+              }
+            },
+            {
+              "name": "Login - Bank Officer",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"username\": \"bank_officer_001\",\n  \"password\": \"SecurePass123!\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/auth/login",
+                  "host": ["{{base_url}}"],
+                  "path": ["auth", "login"]
+                },
+                "description": "Login with bank officer credentials."
+              }
+            },
+            {
+              "name": "Login - Corporate User",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"username\": \"corporate_user_001\",\n  \"password\": \"SecurePass123!\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/auth/login",
+                  "host": ["{{base_url}}"],
+                  "path": ["auth", "login"]
+                },
+                "description": "Login with corporate user credentials."
+              }
+            },
+            {
+              "name": "Login - Invalid Credentials",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"username\": \"invalid_user\",\n  \"password\": \"wrong_password\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/auth/login",
+                  "host": ["{{base_url}}"],
+                  "path": ["auth", "login"]
+                },
+                "description": "Test login with invalid credentials to verify error handling."
+              }
+            }
+          ]
+        },
+        {
+          "name": "👤 Profile Management",
+          "item": [
+            {
+              "name": "Get Current User Profile",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/auth/me",
+                  "host": ["{{base_url}}"],
+                  "path": ["auth", "me"]
+                },
+                "description": "Get the current authenticated user's profile information."
+              }
+            },
+            {
+              "name": "Update User Profile",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"firstName\": \"John Updated\",\n  \"lastName\": \"Admin Updated\",\n  \"phone\": \"+1234567899\",\n  \"bio\": \"Senior Banking Administrator with 10+ years experience in trade finance\",\n  \"timezone\": \"America/New_York\",\n  \"language\": \"en\",\n  \"notifications\": {\n    \"email\": true,\n    \"sms\": false,\n    \"push\": true,\n    \"marketing\": false\n  },\n  \"address\": {\n    \"street\": \"456 Updated Banking Street\",\n    \"city\": \"New York\",\n    \"state\": \"NY\",\n    \"country\": \"USA\",\n    \"postalCode\": \"10002\"\n  }\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/auth/profile",
+                  "host": ["{{base_url}}"],
+                  "path": ["auth", "profile"]
+                },
+                "description": "Update the current user's profile information."
+              }
+            }
+          ]
+        },
+        {
+          "name": "🔒 Password Management",
+          "item": [
+            {
+              "name": "Change Password",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"currentPassword\": \"SecurePass123!\",\n  \"newPassword\": \"NewSecurePass123!\",\n  \"confirmPassword\": \"NewSecurePass123!\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/auth/change-password",
+                  "host": ["{{base_url}}"],
+                  "path": ["auth", "change-password"]
+                },
+                "description": "Change password for the authenticated user."
+              }
+            },
+            {
+              "name": "Forgot Password",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"admin@globalbank.com\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/auth/forgot-password",
+                  "host": ["{{base_url}}"],
+                  "path": ["auth", "forgot-password"]
+                },
+                "description": "Request a password reset email for the given email address."
+              }
+            },
+            {
+              "name": "Reset Password",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"token\": \"your_reset_token_here\",\n  \"newPassword\": \"NewSecurePass123!\",\n  \"confirmPassword\": \"NewSecurePass123!\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/auth/reset-password",
+                  "host": ["{{base_url}}"],
+                  "path": ["auth", "reset-password"]
+                },
+                "description": "Reset password using the token received via email."
+              }
+            }
+          ]
+        },
+        {
+          "name": "🔄 Token Management",
+          "item": [
+            {
+              "name": "Refresh Access Token",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 200) {",
+                      "  const response = pm.response.json();",
+                      "  if (response.success && response.data.tokens) {",
+                      "    pm.environment.set('access_token', response.data.tokens.accessToken);",
+                      "    pm.environment.set('refresh_token', response.data.tokens.refreshToken);",
+                      "    pm.collectionVariables.set('access_token', response.data.tokens.accessToken);",
+                      "    pm.collectionVariables.set('refresh_token', response.data.tokens.refreshToken);",
+                      "    console.log('✅ Token refreshed successfully!');",
+                      "  }",
+                      "} else {",
+                      "  console.log('❌ Token refresh failed:', pm.response.json());",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"refreshToken\": \"{{refresh_token}}\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/auth/refresh",
+                  "host": ["{{base_url}}"],
+                  "path": ["auth", "refresh"]
+                },
+                "description": "Refresh the access token using the refresh token."
+              }
+            },
+            {
+              "name": "Logout",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/auth/logout",
+                  "host": ["{{base_url}}"],
+                  "path": ["auth", "logout"]
+                },
+                "description": "Logout the current user. Note: With JWT, this is primarily client-side token removal."
+              }
+            }
+          ]
+        },
+        {
+          "name": "⚠️ Error Testing",
+          "item": [
+            {
+              "name": "Register - Duplicate Username",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"username\": \"bank_admin_001\",\n  \"email\": \"duplicate@globalbank.com\",\n  \"password\": \"SecurePass123!\",\n  \"confirmPassword\": \"SecurePass123!\",\n  \"firstName\": \"Duplicate\",\n  \"lastName\": \"User\",\n  \"role\": \"bank_officer\",\n  \"organizationId\": \"123e4567-e89b-12d3-a456-426614174000\",\n  \"organizationName\": \"Global Bank Corp\",\n  \"organizationType\": \"bank\",\n  \"acceptTerms\": true\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/auth/register",
+                  "host": ["{{base_url}}"],
+                  "path": ["auth", "register"]
+                },
+                "description": "Test registration with existing username to verify error handling."
+              }
+            },
+            {
+              "name": "Register - Invalid Email",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"username\": \"test_invalid_email\",\n  \"email\": \"invalid-email\",\n  \"password\": \"SecurePass123!\",\n  \"confirmPassword\": \"SecurePass123!\",\n  \"firstName\": \"Test\",\n  \"lastName\": \"User\",\n  \"role\": \"bank_officer\",\n  \"organizationId\": \"123e4567-e89b-12d3-a456-426614174000\",\n  \"organizationName\": \"Test Bank\",\n  \"organizationType\": \"bank\",\n  \"acceptTerms\": true\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/auth/register",
+                  "host": ["{{base_url}}"],
+                  "path": ["auth", "register"]
+                },
+                "description": "Test registration with invalid email format."
+              }
+            },
+            {
+              "name": "Register - Weak Password",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"username\": \"test_weak_password\",\n  \"email\": \"test@bank.com\",\n  \"password\": \"weak\",\n  \"confirmPassword\": \"weak\",\n  \"firstName\": \"Test\",\n  \"lastName\": \"User\",\n  \"role\": \"bank_officer\",\n  \"organizationId\": \"123e4567-e89b-12d3-a456-426614174000\",\n  \"organizationName\": \"Test Bank\",\n  \"organizationType\": \"bank\",\n  \"acceptTerms\": true\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/auth/register",
+                  "host": ["{{base_url}}"],
+                  "path": ["auth", "register"]
+                },
+                "description": "Test registration with weak password to verify validation."
+              }
+            },
+            {
+              "name": "Access Protected Route - No Token",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/auth/me",
+                  "host": ["{{base_url}}"],
+                  "path": ["auth", "me"]
+                },
+                "description": "Test accessing protected route without authentication token."
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "📄 Letter of Credit",
+      "description": "Complete Letter of Credit management system including creation, viewing, updating, and status management.",
+      "item": [
+        {
+          "name": "📋 LC Operations",
+          "item": [
+            {
+              "name": "Create Letter of Credit",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 201) {",
+                      "  const response = pm.response.json();",
+                      "  if (response.success && response.data.id) {",
+                      "    pm.environment.set('lc_id', response.data.id);",
+                      "    pm.collectionVariables.set('lc_id', response.data.id);",
+                      "    console.log('✅ LC Created! ID saved:', response.data.id);",
+                      "    console.log('📋 LC Number:', response.data.lcNumber);",
+                      "  }",
+                      "} else {",
+                      "  console.log('❌ LC Creation failed:', pm.response.json());",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"type\": \"commercial\",\n  \"applicant\": {\n    \"name\": \"TradeCorp International\",\n    \"address\": {\n      \"street\": \"123 Trade Street\",\n      \"city\": \"New York\",\n      \"state\": \"NY\",\n      \"country\": \"USA\",\n      \"postalCode\": \"10001\"\n    },\n    \"contact\": {\n      \"email\": \"trade@tradecorp.com\",\n      \"phone\": \"+1234567890\"\n    }\n  },\n  \"beneficiary\": {\n    \"name\": \"Global Exports Ltd\",\n    \"address\": {\n      \"street\": \"456 Export Avenue\",\n      \"city\": \"London\",\n      \"state\": \"England\",\n      \"country\": \"UK\",\n      \"postalCode\": \"SW1A 1AA\"\n    },\n    \"contact\": {\n      \"email\": \"exports@globalexports.co.uk\",\n      \"phone\": \"+442071234567\"\n    }\n  },\n  \"issuingBank\": {\n    \"name\": \"Global Bank Corp\",\n    \"swiftCode\": \"GLBANKUS33\",\n    \"address\": {\n      \"street\": \"789 Banking Plaza\",\n      \"city\": \"New York\",\n      \"state\": \"NY\",\n      \"country\": \"USA\",\n      \"postalCode\": \"10005\"\n    }\n  },\n  \"advisingBank\": {\n    \"name\": \"London Trade Bank\",\n    \"swiftCode\": \"LTBANKGB22\",\n    \"address\": {\n      \"street\": \"123 Finance Row\",\n      \"city\": \"London\",\n      \"state\": \"England\",\n      \"country\": \"UK\",\n      \"postalCode\": \"EC2V 8RF\"\n    }\n  },\n  \"amount\": {\n    \"value\": 150000,\n    \"currency\": \"USD\"\n  },\n  \"goodsDescription\": \"Premium Quality Cotton Textiles - 500 units of cotton fabric rolls, Grade A quality, as per attached specifications\",\n  \"paymentTerms\": \"sight\",\n  \"shipmentTerms\": {\n    \"incoterms\": \"CIF\",\n    \"fromPort\": \"New York Port\",\n    \"toPort\": \"London Gateway\",\n    \"allowPartialShipment\": false,\n    \"allowTransshipment\": true\n  },\n  \"documents\": {\n    \"required\": [\n      {\n        \"type\": \"commercial_invoice\",\n        \"description\": \"Commercial Invoice in triplicate\",\n        \"copies\": 3\n      },\n      {\n        \"type\": \"bill_of_lading\",\n        \"description\": \"Clean on board Bill of Lading\",\n        \"copies\": 1\n      },\n      {\n        \"type\": \"packing_list\",\n        \"description\": \"Detailed Packing List\",\n        \"copies\": 2\n      },\n      {\n        \"type\": \"certificate_of_origin\",\n        \"description\": \"Certificate of Origin issued by Chamber of Commerce\",\n        \"copies\": 1\n      }\n    ]\n  },\n  \"dateIssued\": \"2024-11-01T00:00:00.000Z\",\n  \"expiryDate\": \"2024-12-31T23:59:59.999Z\",\n  \"shipmentDate\": \"2024-11-30T00:00:00.000Z\",\n  \"presentationPeriod\": 21,\n  \"confirmationRequired\": true,\n  \"transferable\": false,\n  \"notes\": \"This LC is subject to UCP 600. All documents must be presented within 21 days of shipment date.\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/lc",
+                  "host": ["{{base_url}}"],
+                  "path": ["lc"]
+                },
+                "description": "Create a new Letter of Credit with comprehensive trade details."
+              }
+            },
+            {
+              "name": "Get LC by ID",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/lc/{{lc_id}}",
+                  "host": ["{{base_url}}"],
+                  "path": ["lc", "{{lc_id}}"]
+                },
+                "description": "Retrieve a specific Letter of Credit by its ID."
+              }
+            },
+            {
+              "name": "Get All LCs",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/lc",
+                  "host": ["{{base_url}}"],
+                  "path": ["lc"]
+                },
+                "description": "Get all Letter of Credits accessible to the current user."
+              }
+            },
+            {
+              "name": "Search LCs",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/lc?status=draft&type=commercial&minAmount=100000&maxAmount=200000&currency=USD&sort=dateIssued&order=desc&page=1&limit=10",
+                  "host": ["{{base_url}}"],
+                  "path": ["lc"],
+                  "query": [
+                    {
+                      "key": "status",
+                      "value": "draft",
+                      "description": "Filter by LC status"
+                    },
+                    {
+                      "key": "type",
+                      "value": "commercial",
+                      "description": "Filter by LC type"
+                    },
+                    {
+                      "key": "minAmount",
+                      "value": "100000",
+                      "description": "Minimum amount filter"
+                    },
+                    {
+                      "key": "maxAmount",
+                      "value": "200000",
+                      "description": "Maximum amount filter"
+                    },
+                    {
+                      "key": "currency",
+                      "value": "USD",
+                      "description": "Currency filter"
+                    },
+                    {
+                      "key": "sort",
+                      "value": "dateIssued",
+                      "description": "Sort field"
+                    },
+                    {
+                      "key": "order",
+                      "value": "desc",
+                      "description": "Sort order"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1",
+                      "description": "Page number"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10",
+                      "description": "Results per page"
+                    }
+                  ]
+                },
+                "description": "Search Letter of Credits with various filters and pagination."
+              }
+            }
+          ]
+        },
+        {
+          "name": "🔄 Status Management",
+          "item": [
+            {
+              "name": "Update LC Status - Issue",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"issued\",\n  \"reason\": \"LC has been reviewed and approved by bank. All terms and conditions are acceptable.\",\n  \"metadata\": {\n    \"approvedBy\": \"John Admin\",\n    \"approvalDate\": \"2024-11-01T10:30:00.000Z\",\n    \"internalRef\": \"LC-2024-001\"\n  }\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/lc/{{lc_id}}/status",
+                  "host": ["{{base_url}}"],
+                  "path": ["lc", "{{lc_id}}", "status"]
+                },
+                "description": "Update LC status from draft to issued after bank approval."
+              }
+            },
+            {
+              "name": "Update LC Status - Advise",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"advised\",\n  \"reason\": \"LC has been successfully advised to beneficiary bank. Beneficiary notified.\",\n  \"metadata\": {\n    \"advisingBankRef\": \"ADV-GB-001\",\n    \"advisedDate\": \"2024-11-02T14:15:00.000Z\",\n    \"beneficiaryNotified\": true\n  }\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/lc/{{lc_id}}/status",
+                  "host": ["{{base_url}}"],
+                  "path": ["lc", "{{lc_id}}", "status"]
+                },
+                "description": "Update LC status to advised when beneficiary bank receives the LC."
+              }
+            },
+            {
+              "name": "Update LC Status - Confirm",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"confirmed\",\n  \"reason\": \"LC confirmation added by advising bank. Additional payment guarantee provided.\",\n  \"metadata\": {\n    \"confirmingBank\": \"London Trade Bank\",\n    \"confirmationDate\": \"2024-11-03T09:45:00.000Z\",\n    \"confirmationFee\": 2500\n  }\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/lc/{{lc_id}}/status",
+                  "host": ["{{base_url}}"],
+                  "path": ["lc", "{{lc_id}}", "status"]
+                },
+                "description": "Update LC status to confirmed when advising bank adds confirmation."
+              }
+            },
+            {
+              "name": "Update LC Status - Reject",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"rejected\",\n  \"reason\": \"LC application rejected due to insufficient credit standing of applicant. Additional guarantees required.\",\n  \"metadata\": {\n    \"rejectedBy\": \"Credit Committee\",\n    \"rejectionDate\": \"2024-11-01T16:20:00.000Z\",\n    \"rejectionCode\": \"CREDIT_INSUFFICIENT\",\n    \"requiredAction\": \"Provide additional collateral or guarantees\"\n  }\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/lc/{{lc_id}}/status",
+                  "host": ["{{base_url}}"],
+                  "path": ["lc", "{{lc_id}}", "status"]
+                },
+                "description": "Update LC status to rejected when bank declines the application."
+              }
+            }
+          ]
+        },
+        {
+          "name": "📊 Analytics & Search",
+          "item": [
+            {
+              "name": "Search by Beneficiary",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/lc?beneficiary=Global Exports&page=1&limit=5",
+                  "host": ["{{base_url}}"],
+                  "path": ["lc"],
+                  "query": [
+                    {
+                      "key": "beneficiary",
+                      "value": "Global Exports",
+                      "description": "Search by beneficiary name"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "5"
+                    }
+                  ]
+                },
+                "description": "Search LCs by beneficiary name."
+              }
+            },
+            {
+              "name": "Search by Date Range",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/lc?fromDate=2024-10-01&toDate=2024-12-31&sort=amount&order=desc",
+                  "host": ["{{base_url}}"],
+                  "path": ["lc"],
+                  "query": [
+                    {
+                      "key": "fromDate",
+                      "value": "2024-10-01",
+                      "description": "Start date filter"
+                    },
+                    {
+                      "key": "toDate",
+                      "value": "2024-12-31",
+                      "description": "End date filter"
+                    },
+                    {
+                      "key": "sort",
+                      "value": "amount",
+                      "description": "Sort by amount"
+                    },
+                    {
+                      "key": "order",
+                      "value": "desc",
+                      "description": "Descending order"
+                    }
+                  ]
+                },
+                "description": "Search LCs within a specific date range, sorted by amount."
+              }
+            },
+            {
+              "name": "Get LC Statistics",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/lc/statistics",
+                  "host": ["{{base_url}}"],
+                  "path": ["lc", "statistics"]
+                },
+                "description": "Get comprehensive statistics about LCs (Note: This endpoint may need to be implemented)."
+              }
+            }
+          ]
+        },
+        {
+          "name": "⚠️ Error Scenarios",
+          "item": [
+            {
+              "name": "Create LC - Invalid Data",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"type\": \"invalid_type\",\n  \"applicant\": {\n    \"name\": \"\"\n  },\n  \"amount\": {\n    \"value\": -1000,\n    \"currency\": \"INVALID\"\n  }\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/lc",
+                  "host": ["{{base_url}}"],
+                  "path": ["lc"]
+                },
+                "description": "Test LC creation with invalid data to verify validation."
+              }
+            },
+            {
+              "name": "Get Non-existent LC",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/lc/99999999-9999-9999-9999-999999999999",
+                  "host": ["{{base_url}}"],
+                  "path": ["lc", "99999999-9999-9999-9999-999999999999"]
+                },
+                "description": "Test retrieving a non-existent LC."
+              }
+            },
+            {
+              "name": "Update Status - Invalid Transition",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"invalid_status\",\n  \"reason\": \"Testing invalid status transition\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/lc/{{lc_id}}/status",
+                  "host": ["{{base_url}}"],
+                  "path": ["lc", "{{lc_id}}", "status"]
+                },
+                "description": "Test updating LC with invalid status to verify validation."
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "👥 User Management (Admin)",
+      "description": "Admin-only endpoints for user management (Coming Soon)",
+      "item": [
+        {
+          "name": "Get All Users (Admin Only)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/users",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "users"]
+            },
+            "description": "Get all users in the system. Requires bank_admin role."
+          }
+        },
+        {
+          "name": "Update User Status (Admin Only)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isActive\": false,\n  \"reason\": \"Account suspended due to policy violation\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/users/{{user_id}}/status",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "users", "{{user_id}}", "status"]
+            },
+            "description": "Update user account status. Requires bank_admin role."
+          }
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Ensure base_url is set",
+          "if (!pm.collectionVariables.get('base_url')) {",
+          "  pm.collectionVariables.set('base_url', 'http://localhost:3000/api');",
+          "}",
+          "",
+          "// Log current user context",
+          "const token = pm.collectionVariables.get('access_token');",
+          "if (token) {",
+          "  console.log('🔑 Using access token for authenticated request');",
+          "} else {",
+          "  console.log('⚠️ No access token found - this request may fail if authentication is required');",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Global response logging",
+          "console.log('📡 Response Status:', pm.response.code, pm.response.status);",
+          "",
+          "// Check for common error patterns",
+          "if (pm.response.code === 401) {",
+          "  console.log('🚫 Authentication failed - check your access token');",
+          "} else if (pm.response.code === 403) {",
+          "  console.log('🚫 Access forbidden - insufficient permissions');",
+          "} else if (pm.response.code === 404) {",
+          "  console.log('🚫 Resource not found');",
+          "} else if (pm.response.code >= 400) {",
+          "  console.log('❌ Request failed with error:', pm.response.json());",
+          "} else if (pm.response.code >= 200 && pm.response.code < 300) {",
+          "  console.log('✅ Request successful');",
+          "}"
+        ]
+      }
+    }
+  ]
+}
