@@ -286,22 +286,62 @@ export class OrganizationModel {
     };
   }
 
+  /**
+   * Drop all existing indexes except the default _id_ index
+   */
+  private async dropAllIndexes(): Promise<void> {
+    try {
+      const indexes = await this.collection.listIndexes().toArray();
+      
+      for (const index of indexes) {
+        // Skip the default _id_ index as it cannot be dropped
+        if (index.name !== '_id_') {
+          try {
+            await this.collection.dropIndex(index.name);
+            logger.info(`🗑️ Dropped existing organization index: ${index.name}`);
+          } catch (error: any) {
+            // Ignore if index doesn't exist
+            if (error.code !== 27) { // IndexNotFound
+              logger.warn(`⚠️ Failed to drop organization index ${index.name}:`, error.message);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      logger.warn('⚠️ Error listing or dropping organization indexes:', error);
+    }
+  }
+
   // Create indexes for better performance
   async createIndexes(): Promise<void> {
     try {
-      await this.collection.createIndex({ id: 1 }, { unique: true });
-      await this.collection.createIndex({ name: 1, type: 1 }, { unique: true });
-      await this.collection.createIndex({ type: 1 });
-      await this.collection.createIndex({ countryCode: 1 });
-      await this.collection.createIndex({ kycStatus: 1 });
-      await this.collection.createIndex({ isActive: 1 });
-      await this.collection.createIndex({ createdAt: 1 });
-      await this.collection.createIndex({ swiftCode: 1 });
+      // First, drop all existing indexes except _id_
+      await this.dropAllIndexes();
       
-      // Compound indexes
-      await this.collection.createIndex({ type: 1, kycStatus: 1 });
-      await this.collection.createIndex({ type: 1, isActive: 1 });
-      await this.collection.createIndex({ countryCode: 1, type: 1 });
+      const indexOperations = [
+        { key: { id: 1 }, options: { unique: true, name: 'id_unique' } },
+        { key: { name: 1, type: 1 }, options: { unique: true, name: 'name_type_unique' } },
+        { key: { type: 1 }, options: { name: 'type_index' } },
+        { key: { countryCode: 1 }, options: { name: 'countryCode_index' } },
+        { key: { kycStatus: 1 }, options: { name: 'kycStatus_index' } },
+        { key: { isActive: 1 }, options: { name: 'isActive_index' } },
+        { key: { createdAt: 1 }, options: { name: 'createdAt_index' } },
+        { key: { swiftCode: 1 }, options: { sparse: true, name: 'swiftCode_sparse' } }, // Sparse for optional fields
+        
+        // Compound indexes
+        { key: { type: 1, kycStatus: 1 }, options: { name: 'type_kycStatus_compound' } },
+        { key: { type: 1, isActive: 1 }, options: { name: 'type_isActive_compound' } },
+        { key: { countryCode: 1, type: 1 }, options: { name: 'countryCode_type_compound' } }
+      ];
+
+      for (const indexOp of indexOperations) {
+        try {
+          await this.collection.createIndex(indexOp.key as any, indexOp.options);
+          logger.info(`📊 Created organization index: ${indexOp.options.name}`);
+        } catch (error: any) {
+          logger.error(`❌ Error creating organization index ${indexOp.options.name}:`, error);
+        }
+      }
       
       logger.info('📊 Organization collection indexes created successfully');
     } catch (error) {

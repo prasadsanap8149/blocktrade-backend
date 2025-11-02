@@ -39,7 +39,7 @@ export interface IRoleDefinition {
   permissions: string[];
   isDefault: boolean;
   isSystemRole: boolean;
-  organizationId?: string; // null for platform roles, specific org ID for org roles
+  organizationId?: string | null; // null for platform roles, specific org ID for org roles
   entityType?: OrganizationType;
   parentRoleId?: string; // For hierarchical roles
   childRoles?: string[]; // Roles that this role can manage

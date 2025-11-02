@@ -64,13 +64,16 @@ class DataSeeder {
             kycStatus: 'approved' as const
           } as any; // Type assertion for demo data
           
+          // For demo data, bypass role assignment permissions by creating user directly
           const user = await this.userModel.createUser(userRequest);
-          logger.info(`✅ Created user: ${userData.username} (${userData.role})`);
+          logger.info(`✅ Created demo user: ${userData.username} (${userData.role})`);
         } else {
           logger.info(`⏭️  User already exists: ${userData.username}`);
         }
       } catch (error) {
         logger.error(`❌ Failed to create user ${userData.username}:`, error);
+        // Continue with next user instead of failing completely
+        continue;
       }
     }
   }

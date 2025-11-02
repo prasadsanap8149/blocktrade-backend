@@ -385,8 +385,37 @@ export class UserJourneyModel {
     ];
   }
 
+  /**
+   * Drop all existing indexes except the default _id_ index
+   */
+  private async dropAllIndexes(): Promise<void> {
+    try {
+      const indexes = await this.onboardingCollection.listIndexes().toArray();
+      
+      for (const index of indexes) {
+        // Skip the default _id_ index as it cannot be dropped
+        if (index.name !== '_id_') {
+          try {
+            await this.onboardingCollection.dropIndex(index.name);
+            logger.info(`🗑️ Dropped existing user journey index: ${index.name}`);
+          } catch (error: any) {
+            // Ignore if index doesn't exist
+            if (error.code !== 27) { // IndexNotFound
+              logger.warn(`⚠️ Failed to drop user journey index ${index.name}:`, error.message);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      logger.warn('⚠️ Error listing or dropping user journey indexes:', error);
+    }
+  }
+
   async createIndexes(): Promise<void> {
     try {
+      // First, drop all existing indexes except _id_
+      await this.dropAllIndexes();
+      
       const indexOperations = [
         { key: { userId: 1, organizationId: 1 }, options: { unique: true }, name: 'user_org_unique' },
         { key: { userId: 1 }, options: {}, name: 'user_id' },
@@ -402,11 +431,7 @@ export class UserJourneyModel {
           await this.onboardingCollection.createIndex(indexOp.key as any, indexOp.options);
           logger.info(`📊 Created index: ${indexOp.name}`);
         } catch (error: any) {
-          if (error.code === 11000 || error.codeName === 'DuplicateKey') {
-            logger.warn(`⚠️ Index ${indexOp.name} already exists, skipping...`);
-          } else {
-            logger.error(`❌ Error creating index ${indexOp.name}:`, error);
-          }
+          logger.error(`❌ Error creating index ${indexOp.name}:`, error);
         }
       }
 

@@ -426,10 +426,24 @@ export class DatabaseInitializer {
 
       // Check if default roles exist
       const defaultRoles = ['platform_super_admin', 'organization_super_admin', 'organization_admin'];
+      const missingRoles = [];
+      
       for (const roleName of defaultRoles) {
         const role = await this.getRoleModel().getRoleByName(roleName);
         if (!role) {
-          logger.error(`❌ Missing default role: ${roleName}`);
+          missingRoles.push(roleName);
+        }
+      }
+
+      if (missingRoles.length > 0) {
+        logger.warn(`⚠️ Missing default roles: ${missingRoles.join(', ')}`);
+        logger.info('🔄 Attempting to reinitialize roles...');
+        
+        try {
+          await this.initializeRoles();
+          logger.info('✅ Roles reinitialized successfully');
+        } catch (roleError) {
+          logger.error('❌ Failed to reinitialize roles:', roleError);
           return false;
         }
       }

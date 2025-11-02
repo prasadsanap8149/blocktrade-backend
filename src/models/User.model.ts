@@ -686,10 +686,40 @@ export class UserModel {
     };
   }
 
+  /**
+   * Drop all existing indexes except the default _id_ index
+   */
+  private async dropAllIndexes(): Promise<void> {
+    try {
+      const indexes = await this.collection.listIndexes().toArray();
+      
+      for (const index of indexes) {
+        // Skip the default _id_ index as it cannot be dropped
+        if (index.name !== '_id_') {
+          try {
+            await this.collection.dropIndex(index.name);
+            logger.info(`🗑️ Dropped existing index: ${index.name}`);
+          } catch (error: any) {
+            // Ignore if index doesn't exist
+            if (error.code !== 27) { // IndexNotFound
+              logger.warn(`⚠️ Failed to drop index ${index.name}:`, error.message);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      logger.warn('⚠️ Error listing or dropping indexes:', error);
+    }
+  }
+
   // Create indexes for better performance
   async createIndexes(): Promise<void> {
     try {
-      // Create indexes with proper error handling
+      logger.info('📊 Setting up user collection indexes...');
+      
+      // First, drop all existing indexes except _id_
+      await this.dropAllIndexes();
+      
       const indexOperations = [
         { key: { username: 1 }, options: { unique: true, sparse: true }, name: 'username' },
         { key: { email: 1 }, options: { unique: true }, name: 'email' },
@@ -709,22 +739,7 @@ export class UserModel {
           await this.collection.createIndex(indexOp.key as any, indexOp.options);
           logger.info(`📊 Created index: ${indexOp.name}`);
         } catch (error: any) {
-          if (error.code === 11000 || error.codeName === 'DuplicateKey') {
-            logger.warn(`⚠️ Index ${indexOp.name} already exists or has duplicate values, skipping...`);
-          } else if (error.code === 85 || error.codeName === 'IndexOptionsConflict') {
-            logger.warn(`⚠️ Index ${indexOp.name} has conflicting options, dropping and recreating...`);
-            try {
-              // Drop by index name instead of key
-              const indexName = Object.keys(indexOp.key).join('_') + '_1';
-              await this.collection.dropIndex(indexName);
-              await this.collection.createIndex(indexOp.key as any, indexOp.options);
-              logger.info(`📊 Recreated index: ${indexOp.name}`);
-            } catch (recreateError) {
-              logger.error(`❌ Failed to recreate index ${indexOp.name}:`, recreateError);
-            }
-          } else {
-            logger.error(`❌ Error creating index ${indexOp.name}:`, error);
-          }
+          logger.error(`❌ Error creating index ${indexOp.name}:`, error);
         }
       }
       

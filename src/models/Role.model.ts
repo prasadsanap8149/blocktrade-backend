@@ -41,13 +41,14 @@ export class RoleModel {
       if (roleData.organizationId) {
         query.organizationId = roleData.organizationId;
       } else {
-        query.organizationId = { $exists: false };
+        query.organizationId = null; // Use null instead of $exists: false
       }
       
       const existingRole = await this.rolesCollection.findOne(query);
 
       if (existingRole) {
-        throw new Error(`Role '${roleData.name}' already exists`);
+        logger.warn(`⚠️ Role '${roleData.name}' already exists, skipping creation`);
+        return existingRole;
       }
 
       const role: IRoleDefinition = {
@@ -60,7 +61,7 @@ export class RoleModel {
         permissions: roleData.permissions,
         isDefault: false,
         isSystemRole: false,
-        organizationId: roleData.organizationId,
+        organizationId: roleData.organizationId || null, // Explicitly set to null for platform roles
         entityType: roleData.entityType,
         parentRoleId: roleData.parentRoleId,
         childRoles: [],
@@ -102,14 +103,15 @@ export class RoleModel {
     }
   }
 
-  async getRoleByName(name: string, organizationId?: string): Promise<IRoleDefinition | null> {
+  async getRoleByName(name: string, organizationId?: string | null): Promise<IRoleDefinition | null> {
     try {
       const query: any = { name };
       
       if (organizationId) {
         query.organizationId = organizationId;
       } else {
-        query.organizationId = { $exists: false };
+        // Explicitly check for null organizationId for platform roles
+        query.organizationId = null;
       }
       
       return await this.rolesCollection.findOne(query);
@@ -626,9 +628,49 @@ export class RoleModel {
     }
   }
 
+  /**
+   * Drop all existing indexes except the default _id_ index
+   */
+  private async dropAllIndexes(): Promise<void> {
+    try {
+      const collections = [
+        { collection: this.rolesCollection, name: 'roles' },
+        { collection: this.hierarchyCollection, name: 'role_hierarchies' },
+        { collection: this.userRolesCollection, name: 'user_roles' }
+      ];
+
+      for (const { collection, name } of collections) {
+        try {
+          const indexes = await collection.listIndexes().toArray();
+          
+          for (const index of indexes) {
+            // Skip the default _id_ index as it cannot be dropped
+            if (index.name !== '_id_') {
+              try {
+                await collection.dropIndex(index.name);
+                logger.info(`🗑️ Dropped existing ${name} index: ${index.name}`);
+              } catch (error: any) {
+                // Ignore if index doesn't exist
+                if (error.code !== 27) { // IndexNotFound
+                  logger.warn(`⚠️ Failed to drop ${name} index ${index.name}:`, error.message);
+                }
+              }
+            }
+          }
+        } catch (error) {
+          logger.warn(`⚠️ Error listing or dropping ${name} indexes:`, error);
+        }
+      }
+    } catch (error) {
+      logger.warn('⚠️ Error in dropAllIndexes:', error);
+    }
+  }
+
   // Index creation
   async createIndexes(): Promise<void> {
     try {
+      await this.dropAllIndexes(); // Drop existing indexes before creating new ones
+
       const indexOperations = [
         // Roles collection indexes
         { collection: this.rolesCollection, key: { name: 1, organizationId: 1 }, options: { unique: true }, name: 'roles_name_org' },
@@ -654,11 +696,7 @@ export class RoleModel {
           await indexOp.collection.createIndex(indexOp.key as any, indexOp.options);
           logger.info(`📊 Created index: ${indexOp.name}`);
         } catch (error: any) {
-          if (error.code === 11000 || error.codeName === 'DuplicateKey') {
-            logger.warn(`⚠️ Index ${indexOp.name} already exists, skipping...`);
-          } else {
-            logger.error(`❌ Error creating index ${indexOp.name}:`, error);
-          }
+          logger.error(`❌ Error creating index ${indexOp.name}:`, error);
         }
       }
 
