@@ -1,0 +1,962 @@
+{
+  "info": {
+    "name": "BlockTrade Auth & Role Management API",
+    "description": "Complete collection for BlockTrade authentication with automatic role assignment and comprehensive role management system. Perfect for frontend integration.",
+    "version": "1.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3001/api",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "organizationId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "🔐 Authentication",
+      "item": [
+        {
+          "name": "Register User (Auto Role Assignment)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('accessToken', response.data.tokens.accessToken);",
+                  "    pm.collectionVariables.set('refreshToken', response.data.tokens.refreshToken);",
+                  "    pm.collectionVariables.set('userId', response.data.user.id);",
+                  "    pm.collectionVariables.set('organizationId', response.data.user.organizationId);",
+                  "    console.log('Auto-assigned role:', response.data.user.role);",
+                  "    console.log('Tokens saved to collection variables');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"john_bank_admin\",\n  \"email\": \"john@bankexample.com\",\n  \"password\": \"SecurePass123!\",\n  \"confirmPassword\": \"SecurePass123!\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Smith\",\n  \"organizationId\": \"{{$randomUUID}}\",\n  \"organizationName\": \"First National Bank\",\n  \"organizationType\": \"bank\",\n  \"phone\": \"+1234567890\",\n  \"address\": {\n    \"street\": \"123 Banking St\",\n    \"city\": \"New York\",\n    \"state\": \"NY\",\n    \"country\": \"USA\",\n    \"postalCode\": \"10001\"\n  },\n  \"timezone\": \"America/New_York\",\n  \"language\": \"en\",\n  \"acceptTerms\": true,\n  \"agreeToMarketing\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Register a new user with automatic role assignment based on organization type. First user gets admin role, subsequent users get standard role."
+          },
+          "response": []
+        },
+        {
+          "name": "Register Corporate User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    console.log('Auto-assigned role:', response.data.user.role);",
+                  "    console.log('Expected role: corporate_admin (first user) or corporate_user');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"sarah_corp_admin\",\n  \"email\": \"sarah@corporateexample.com\",\n  \"password\": \"SecurePass123!\",\n  \"confirmPassword\": \"SecurePass123!\",\n  \"firstName\": \"Sarah\",\n  \"lastName\": \"Johnson\",\n  \"organizationId\": \"{{$randomUUID}}\",\n  \"organizationName\": \"Global Trading Corp\",\n  \"organizationType\": \"corporate\",\n  \"phone\": \"+1987654321\",\n  \"acceptTerms\": true,\n  \"agreeToMarketing\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Register a corporate user - will auto-assign corporate_admin (first user) or corporate_user role"
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('accessToken', response.data.tokens.accessToken);",
+                  "    pm.collectionVariables.set('refreshToken', response.data.tokens.refreshToken);",
+                  "    pm.collectionVariables.set('userId', response.data.user.id);",
+                  "    pm.collectionVariables.set('organizationId', response.data.user.organizationId);",
+                  "    console.log('User role:', response.data.user.role);",
+                  "    console.log('Tokens updated successfully');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"john_bank_admin\",\n  \"password\": \"SecurePass123!\",\n  \"rememberMe\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Login with username/email and password. Returns access token and user info with auto-assigned role."
+          },
+          "response": []
+        },
+        {
+          "name": "Login with MFA",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"john_bank_admin\",\n  \"password\": \"SecurePass123!\",\n  \"mfaCode\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Login with MFA code when MFA is enabled"
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('accessToken', response.data.accessToken);",
+                  "    pm.collectionVariables.set('refreshToken', response.data.refreshToken);",
+                  "    console.log('Tokens refreshed successfully');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "refresh"
+              ]
+            },
+            "description": "Refresh access token using refresh token"
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "logout"
+              ]
+            },
+            "description": "Logout and invalidate tokens"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "👤 Profile Management",
+      "item": [
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "profile"
+              ]
+            },
+            "description": "Get current user profile with role and permissions"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Smith Jr.\",\n  \"phone\": \"+1234567890\",\n  \"bio\": \"Senior Banking Professional\",\n  \"timezone\": \"America/New_York\",\n  \"language\": \"en\",\n  \"notifications\": {\n    \"email\": true,\n    \"sms\": false,\n    \"push\": true,\n    \"marketing\": false\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "profile"
+              ]
+            },
+            "description": "Update user profile information"
+          },
+          "response": []
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"SecurePass123!\",\n  \"newPassword\": \"NewSecurePass456!\",\n  \"confirmPassword\": \"NewSecurePass456!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/change-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "change-password"
+              ]
+            },
+            "description": "Change user password"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🔄 Password Recovery",
+      "item": [
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john@bankexample.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/forgot-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "forgot-password"
+              ]
+            },
+            "description": "Request password reset email"
+          },
+          "response": []
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"reset-token-from-email\",\n  \"newPassword\": \"NewSecurePass456!\",\n  \"confirmPassword\": \"NewSecurePass456!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/reset-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "reset-password"
+              ]
+            },
+            "description": "Reset password using token from email"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🎯 Role Management",
+      "item": [
+        {
+          "name": "Get Available Roles",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/roles?type=organization&organizationId={{organizationId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles"
+              ],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "organization"
+                },
+                {
+                  "key": "organizationId",
+                  "value": "{{organizationId}}"
+                }
+              ]
+            },
+            "description": "Get all available roles for the organization"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Organization Role",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"custom_bank_role\",\n  \"displayName\": \"Custom Bank Role\",\n  \"description\": \"Custom role for specific bank operations\",\n  \"type\": \"organization\",\n  \"organizationId\": \"{{organizationId}}\",\n  \"permissions\": [\n    \"lc:view\",\n    \"document:view\",\n    \"payment:view\"\n  ],\n  \"level\": 3,\n  \"canAssign\": [\"bank_officer\"],\n  \"metadata\": {\n    \"department\": \"operations\",\n    \"accessLevel\": \"standard\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/roles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles"
+              ]
+            },
+            "description": "Create a custom role for the organization (admin only)"
+          },
+          "response": []
+        },
+        {
+          "name": "Assign Role to User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"target-user-id\",\n  \"roleId\": \"role-id-to-assign\",\n  \"organizationId\": \"{{organizationId}}\",\n  \"expiresAt\": \"2024-12-31T23:59:59Z\",\n  \"isTemporary\": false,\n  \"metadata\": {\n    \"assignmentReason\": \"Promotion to manager level\",\n    \"reviewDate\": \"2024-06-30\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/roles/assign",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles",
+                "assign"
+              ]
+            },
+            "description": "Assign a role to a user (admin/manager only)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get User Roles",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/roles/user/{{userId}}?organizationId={{organizationId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles",
+                "user",
+                "{{userId}}"
+              ],
+              "query": [
+                {
+                  "key": "organizationId",
+                  "value": "{{organizationId}}"
+                }
+              ]
+            },
+            "description": "Get all roles assigned to a specific user"
+          },
+          "response": []
+        },
+        {
+          "name": "Get User Permissions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/roles/permissions/{{userId}}?organizationId={{organizationId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles",
+                "permissions",
+                "{{userId}}"
+              ],
+              "query": [
+                {
+                  "key": "organizationId",
+                  "value": "{{organizationId}}"
+                }
+              ]
+            },
+            "description": "Get all effective permissions for a user"
+          },
+          "response": []
+        },
+        {
+          "name": "Remove Role from User",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/roles/user/{{userId}}/role/role-id-to-remove",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles",
+                "user",
+                "{{userId}}",
+                "role",
+                "role-id-to-remove"
+              ]
+            },
+            "description": "Remove a role from a user"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🚀 User Journey & Onboarding",
+      "item": [
+        {
+          "name": "Get User Journey Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user-journey/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user-journey",
+                "{{userId}}"
+              ]
+            },
+            "description": "Get current onboarding status and progress"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Journey Step",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"step\": 2,\n  \"stepData\": {\n    \"profileCompleted\": true,\n    \"profileCompletionData\": {\n      \"bio\": \"Experienced banking professional\",\n      \"preferredName\": \"John\",\n      \"workPhone\": \"+1234567890\"\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/user-journey/{{userId}}/step",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user-journey",
+                "{{userId}}",
+                "step"
+              ]
+            },
+            "description": "Update user journey step with completion data"
+          },
+          "response": []
+        },
+        {
+          "name": "Complete Onboarding",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"finalRoles\": [\"bank_officer\"],\n  \"completionNotes\": \"Successfully completed banking onboarding process\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/user-journey/{{userId}}/complete",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user-journey",
+                "{{userId}}",
+                "complete"
+              ]
+            },
+            "description": "Mark onboarding as complete and assign final roles"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🔒 Multi-Factor Authentication",
+      "item": [
+        {
+          "name": "Enable MFA - Generate QR Code",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/mfa/enable",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "mfa",
+                "enable"
+              ]
+            },
+            "description": "Generate MFA secret and QR code for setup"
+          },
+          "response": []
+        },
+        {
+          "name": "Verify and Activate MFA",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mfaCode\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/mfa/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "mfa",
+                "verify"
+              ]
+            },
+            "description": "Verify MFA code and activate MFA for account"
+          },
+          "response": []
+        },
+        {
+          "name": "Disable MFA",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mfaCode\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/mfa/disable",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "mfa",
+                "disable"
+              ]
+            },
+            "description": "Disable MFA for account"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🧪 Testing & Examples",
+      "item": [
+        {
+          "name": "Test Auto-Role Assignment - Bank",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('User gets bank_admin role (first user)', function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.data.user.role).to.equal('bank_admin');",
+                  "});",
+                  "",
+                  "pm.test('Organization type is bank', function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.data.user.organizationType).to.equal('bank');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"test_bank_{{$randomFirstName}}\",\n  \"email\": \"{{$randomFirstName}}@testbank.com\",\n  \"password\": \"SecurePass123!\",\n  \"confirmPassword\": \"SecurePass123!\",\n  \"firstName\": \"{{$randomFirstName}}\",\n  \"lastName\": \"{{$randomLastName}}\",\n  \"organizationId\": \"{{$randomUUID}}\",\n  \"organizationName\": \"Test Bank {{$randomCompanyName}}\",\n  \"organizationType\": \"bank\",\n  \"acceptTerms\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Test that first bank user gets admin role automatically"
+          },
+          "response": []
+        },
+        {
+          "name": "Test Auto-Role Assignment - Corporate",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('User gets corporate_admin role (first user)', function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.data.user.role).to.equal('corporate_admin');",
+                  "});",
+                  "",
+                  "pm.test('Organization type is corporate', function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.data.user.organizationType).to.equal('corporate');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"test_corp_{{$randomFirstName}}\",\n  \"email\": \"{{$randomFirstName}}@testcorp.com\",\n  \"password\": \"SecurePass123!\",\n  \"confirmPassword\": \"SecurePass123!\",\n  \"firstName\": \"{{$randomFirstName}}\",\n  \"lastName\": \"{{$randomLastName}}\",\n  \"organizationId\": \"{{$randomUUID}}\",\n  \"organizationName\": \"Test Corp {{$randomCompanyName}}\",\n  \"organizationType\": \"corporate\",\n  \"acceptTerms\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Test that first corporate user gets admin role automatically"
+          },
+          "response": []
+        },
+        {
+          "name": "Verify No Manual Role Selection",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Manual role is ignored in favor of auto-assignment', function () {",
+                  "    const response = pm.response.json();",
+                  "    // Even though we send 'nbfc_user', it should get 'nbfc_admin' as first user",
+                  "    pm.expect(response.data.user.role).to.equal('nbfc_admin');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"test_nbfc_{{$randomFirstName}}\",\n  \"email\": \"{{$randomFirstName}}@testnbfc.com\",\n  \"password\": \"SecurePass123!\",\n  \"confirmPassword\": \"SecurePass123!\",\n  \"firstName\": \"{{$randomFirstName}}\",\n  \"lastName\": \"{{$randomLastName}}\",\n  \"role\": \"nbfc_user\",\n  \"organizationId\": \"{{$randomUUID}}\",\n  \"organizationName\": \"Test NBFC {{$randomCompanyName}}\",\n  \"organizationType\": \"nbfc\",\n  \"acceptTerms\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Test that manual role selection is ignored and auto-assignment takes precedence"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

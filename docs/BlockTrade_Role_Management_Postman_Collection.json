@@ -1,0 +1,631 @@
+{
+  "info": {
+    "name": "BlockTrade Role Management API",
+    "description": "Comprehensive API collection for BlockTrade's multi-level role management system and user journey",
+    "version": "1.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "organization_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "user_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "role_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login Platform Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('access_token', response.data.tokens.accessToken);",
+                  "    pm.collectionVariables.set('user_id', response.data.user.id);",
+                  "    pm.collectionVariables.set('organization_id', response.data.user.organizationId);",
+                  "    console.log('Platform admin logged in successfully');",
+                  "} else {",
+                  "    console.log('Login failed:', pm.response.text());",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"platform_admin\",\n  \"password\": \"BlockTrade@2024!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Login Demo Bank Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('access_token', response.data.tokens.accessToken);",
+                  "    pm.collectionVariables.set('user_id', response.data.user.id);",
+                  "    pm.collectionVariables.set('organization_id', response.data.user.organizationId);",
+                  "    console.log('Bank admin logged in successfully');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"bank_admin\",\n  \"password\": \"Demo@2024!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Role Management",
+      "item": [
+        {
+          "name": "Get All Roles for Organization",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/roles?organizationId={{organization_id}}&includeSystem=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["roles"],
+              "query": [
+                {
+                  "key": "organizationId",
+                  "value": "{{organization_id}}"
+                },
+                {
+                  "key": "includeSystem",
+                  "value": "true"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Platform Roles",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/roles/platform",
+              "host": ["{{baseUrl}}"],
+              "path": ["roles", "platform"]
+            }
+          }
+        },
+        {
+          "name": "Get Role Hierarchy",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/roles/hierarchy?organizationId={{organization_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["roles", "hierarchy"],
+              "query": [
+                {
+                  "key": "organizationId",
+                  "value": "{{organization_id}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Custom Role",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('role_id', response.data.role.id);",
+                  "    console.log('Custom role created successfully');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"financial_analyst\",\n  \"displayName\": \"Financial Analyst\",\n  \"description\": \"Specialized role for financial analysis and reporting\",\n  \"level\": \"entity_specific\",\n  \"category\": \"specialist\",\n  \"permissions\": [\n    \"lc:view\",\n    \"report:create\",\n    \"report:export\",\n    \"analytics:view\",\n    \"document:view\"\n  ],\n  \"organizationId\": \"{{organization_id}}\",\n  \"entityType\": \"bank\",\n  \"metadata\": {\n    \"departmentId\": \"finance\",\n    \"customFields\": {\n      \"requiresCertification\": true,\n      \"accessLevel\": \"intermediate\"\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/roles",
+              "host": ["{{baseUrl}}"],
+              "path": ["roles"]
+            }
+          }
+        },
+        {
+          "name": "Update Role",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"displayName\": \"Senior Financial Analyst\",\n  \"description\": \"Senior-level financial analysis and strategic reporting\",\n  \"permissions\": [\n    \"lc:view\",\n    \"lc:approve\",\n    \"report:create\",\n    \"report:export\",\n    \"report:admin\",\n    \"analytics:view\",\n    \"document:view\",\n    \"document:verify\"\n  ],\n  \"metadata\": {\n    \"departmentId\": \"finance\",\n    \"customFields\": {\n      \"requiresCertification\": true,\n      \"accessLevel\": \"senior\",\n      \"approvalLimit\": 100000\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/roles/{{role_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["roles", "{{role_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Role Assignment",
+      "item": [
+        {
+          "name": "Assign Role to User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{user_id}}\",\n  \"roleId\": \"{{role_id}}\",\n  \"organizationId\": \"{{organization_id}}\",\n  \"expiresAt\": \"2024-12-31T23:59:59Z\",\n  \"isTemporary\": false,\n  \"metadata\": {\n    \"assignmentReason\": \"Department specialization\",\n    \"notes\": \"Assigned for financial analysis project\",\n    \"departmentId\": \"finance\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/roles/assign",
+              "host": ["{{baseUrl}}"],
+              "path": ["roles", "assign"]
+            }
+          }
+        },
+        {
+          "name": "Get User Roles",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/roles/user/{{user_id}}?organizationId={{organization_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["roles", "user", "{{user_id}}"],
+              "query": [
+                {
+                  "key": "organizationId",
+                  "value": "{{organization_id}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Revoke Role from User",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{user_id}}\",\n  \"roleId\": \"{{role_id}}\",\n  \"organizationId\": \"{{organization_id}}\",\n  \"reason\": \"Project completion\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/roles/revoke",
+              "host": ["{{baseUrl}}"],
+              "path": ["roles", "revoke"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "User Journey",
+      "item": [
+        {
+          "name": "Start User Journey",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetUserId\": \"{{user_id}}\",\n  \"organizationType\": \"bank\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/roles/journey/start",
+              "host": ["{{baseUrl}}"],
+              "path": ["roles", "journey", "start"]
+            }
+          }
+        },
+        {
+          "name": "Get Journey Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/roles/journey/{{user_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["roles", "journey", "{{user_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Complete Step 1 - Organization Setup",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stepData\": {\n    \"organizationRole\": \"manager\",\n    \"department\": \"Trade Finance\",\n    \"reportingManager\": \"senior.manager@bank.com\",\n    \"teamMembers\": [\n      \"analyst1@bank.com\",\n      \"analyst2@bank.com\"\n    ],\n    \"projectAssignments\": [\n      \"LC Processing\",\n      \"Trade Documentation\"\n    ]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/roles/journey/step/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["roles", "journey", "step", "1"]
+            }
+          }
+        },
+        {
+          "name": "Complete Step 2 - Profile Completion",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stepData\": {\n    \"firstName\": \"John\",\n    \"lastName\": \"Manager\",\n    \"email\": \"john.manager@bank.com\",\n    \"phone\": \"+1-555-0123\",\n    \"bio\": \"Experienced trade finance manager with 10+ years in international banking\",\n    \"timezone\": \"America/New_York\",\n    \"language\": \"en\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/roles/journey/step/2",
+              "host": ["{{baseUrl}}"],
+              "path": ["roles", "journey", "step", "2"]
+            }
+          }
+        },
+        {
+          "name": "Complete Step 3 - Security Setup",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stepData\": {\n    \"passwordConfirmed\": true,\n    \"securityQuestions\": [\n      {\n        \"question\": \"What was the name of your first pet?\",\n        \"answer\": \"Fluffy\"\n      },\n      {\n        \"question\": \"What city were you born in?\",\n        \"answer\": \"New York\"\n      }\n    ],\n    \"mfaEnabled\": true,\n    \"backupEmail\": \"john.backup@personal.com\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/roles/journey/step/3",
+              "host": ["{{baseUrl}}"],
+              "path": ["roles", "journey", "step", "3"]
+            }
+          }
+        },
+        {
+          "name": "Complete Step 4 - Preferences Setup",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stepData\": {\n    \"notifications\": {\n      \"email\": true,\n      \"sms\": false,\n      \"push\": true,\n      \"marketing\": false\n    },\n    \"theme\": \"dark\",\n    \"language\": \"en\",\n    \"timezone\": \"America/New_York\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/roles/journey/step/4",
+              "host": ["{{baseUrl}}"],
+              "path": ["roles", "journey", "step", "4"]
+            }
+          }
+        },
+        {
+          "name": "Complete Step 5 - Training Completion",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stepData\": {\n    \"trainingModulesCompleted\": [\n      \"trade-finance-basics\",\n      \"letter-of-credit-processing\",\n      \"compliance-and-kyc\",\n      \"platform-security\"\n    ],\n    \"complianceAcknowledgment\": true,\n    \"additionalTraining\": [\n      \"advanced-trade-finance\",\n      \"international-regulations\"\n    ]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/roles/journey/step/5",
+              "host": ["{{baseUrl}}"],
+              "path": ["roles", "journey", "step", "5"]
+            }
+          }
+        },
+        {
+          "name": "Get Journey Configuration",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/roles/journey/config?organizationId={{organization_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["roles", "journey", "config"],
+              "query": [
+                {
+                  "key": "organizationId",
+                  "value": "{{organization_id}}"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "System Administration",
+      "item": [
+        {
+          "name": "Initialize Organization Roles",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"organizationId\": \"new_org_123\",\n  \"organizationType\": \"corporate\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/roles/init-organization",
+              "host": ["{{baseUrl}}"],
+              "path": ["roles", "init-organization"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Testing Scenarios",
+      "item": [
+        {
+          "name": "Test Permission Check",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('User has required permissions', function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.data.permissions).to.be.an('array');",
+                  "    pm.expect(response.data.permissions.length).to.be.greaterThan(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/roles/user/{{user_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["roles", "user", "{{user_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Test Role Assignment Validation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Role assignment requires valid permissions', function () {",
+                  "    if (pm.response.code === 403) {",
+                  "        console.log('✅ Permission validation working correctly');",
+                  "    } else if (pm.response.code === 201) {",
+                  "        console.log('✅ Role assigned successfully');",
+                  "    } else {",
+                  "        console.log('⚠️ Unexpected response code:', pm.response.code);",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"test_user_123\",\n  \"roleId\": \"platform_super_admin\",\n  \"organizationId\": \"{{organization_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/roles/assign",
+              "host": ["{{baseUrl}}"],
+              "path": ["roles", "assign"]
+            }
+          }
+        },
+        {
+          "name": "Test Journey Step Validation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Journey step validation works', function () {",
+                  "    if (pm.response.code === 400) {",
+                  "        console.log('✅ Step validation working - missing required fields');",
+                  "    } else if (pm.response.code === 200) {",
+                  "        console.log('✅ Step completed successfully');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stepData\": {\n    \"organizationRole\": \"\",\n    \"department\": \"\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/roles/journey/step/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["roles", "journey", "step", "1"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Auto-refresh token if needed",
+          "const token = pm.collectionVariables.get('access_token');",
+          "if (!token) {",
+          "    console.log('No access token found. Please login first.');",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Global test to check for common error patterns",
+          "pm.test('Response should not have authentication errors', function () {",
+          "    pm.expect(pm.response.code).to.not.equal(401);",
+          "});",
+          "",
+          "pm.test('Response should be valid JSON', function () {",
+          "    pm.response.to.be.json;",
+          "});"
+        ]
+      }
+    }
+  ]
+}

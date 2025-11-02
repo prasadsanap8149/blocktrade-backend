@@ -59,10 +59,9 @@ export const registerSchema = Joi.object({
       'logistics_admin', 'logistics_user', 
       'insurance_admin', 'insurance_user'
     )
-    .required()
+    .optional()
     .messages({
-      'any.only': 'Role must be one of: bank_admin, bank_officer, corporate_admin, corporate_user, nbfc_admin, nbfc_user, logistics_admin, logistics_user, insurance_admin, insurance_user',
-      'any.required': 'Role is required'
+      'any.only': 'Role must be one of: bank_admin, bank_officer, corporate_admin, corporate_user, nbfc_admin, nbfc_user, logistics_admin, logistics_user, insurance_admin, insurance_user'
     }),
 
   organizationId: Joi.string()

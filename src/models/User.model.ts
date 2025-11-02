@@ -32,7 +32,8 @@ export class UserModel {
       const passwordHash = await bcrypt.hash(userData.password, saltRounds);
 
       // Get default permissions for role
-      const permissions = userData.permissions || [...(ROLE_PERMISSIONS[userData.role] || [])];
+      const userRole = userData.role!; // Role is guaranteed to be set by auth controller
+      const permissions = userData.permissions || [...(ROLE_PERMISSIONS[userRole] || [])];
 
       // Create user document
       const user: IUser = {
@@ -41,7 +42,7 @@ export class UserModel {
         passwordHash,
         firstName: userData.firstName,
         lastName: userData.lastName,
-        role: userData.role,
+        role: userRole,
         organizationId: userData.organizationId,
         organizationName: userData.organizationName,
         organizationType: userData.organizationType,

@@ -103,7 +103,7 @@ export interface CreateUserRequest {
   confirmPassword: string; // Added for frontend validation
   firstName: string;
   lastName: string;
-  role: UserRole;
+  role?: UserRole; // Made optional since we auto-assign based on organization type
   organizationId: string;
   organizationName: string;
   organizationType: OrganizationType;

@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import { randomBytes } from 'crypto';
 import { asyncHandler, AppError } from '../middleware/errorHandler';
 import UserModel from '../models/User.model';
+import { RoleModel } from '../models/Role.model';
+import { UserJourneyModel } from '../models/UserJourney.model';
 import { authService } from '../services/auth.service';
 import { emailService } from '../services/email.service';
 import { 
@@ -14,31 +16,70 @@ import {
   ChangePasswordRequest,
   UpdateProfileRequest
 } from '../types/user.types';
+import { OrganizationType, OrganizationRole, EntitySpecificRole, UserJourneyStep } from '../types/role.types';
 import { logger } from '../utils/logger';
 import { database } from '../config/database';
 
 export class AuthController {
   private userModel!: UserModel;
+  private roleModel!: RoleModel;
+  private userJourneyModel!: UserJourneyModel;
 
   constructor() {
     // Initialize after database connection
-    this.initializeUserModel();
+    this.initializeModels();
   }
 
-  public async initializeUserModel() {
+  public async initializeModels() {
     try {
       await database.connect();
       this.userModel = new UserModel();
+      this.roleModel = new RoleModel();
+      this.userJourneyModel = new UserJourneyModel();
       await this.userModel.createIndexes();
     } catch (error) {
-      logger.error('❌ Failed to initialize UserModel:', error);
+      logger.error('❌ Failed to initialize models:', error);
+    }
+  }
+
+  /**
+   * Automatically determines the default role for a new user based on organization type
+   * First user in an organization gets admin role, subsequent users get basic user role
+   */
+  private async getDefaultRoleForUser(organizationType: OrganizationType, organizationId: string): Promise<string> {
+    try {
+      // Check if this is the first user in the organization
+      const existingUsers = await this.userModel.findByOrganization(organizationId);
+      const isFirstUser = existingUsers.length === 0;
+
+      // Define default roles based on organization type
+      const defaultRoles = {
+        bank: isFirstUser ? 'bank_admin' : 'bank_officer',
+        corporate: isFirstUser ? 'corporate_admin' : 'corporate_user',
+        nbfc: isFirstUser ? 'nbfc_admin' : 'nbfc_user',
+        logistics: isFirstUser ? 'logistics_admin' : 'logistics_user',
+        insurance: isFirstUser ? 'insurance_admin' : 'insurance_user'
+      };
+
+      return defaultRoles[organizationType];
+    } catch (error) {
+      logger.error('Error determining default role:', error);
+      // Fallback to basic user role
+      const fallbackRoles = {
+        bank: 'bank_officer',
+        corporate: 'corporate_user',
+        nbfc: 'nbfc_user',
+        logistics: 'logistics_user',
+        insurance: 'insurance_user'
+      };
+      return fallbackRoles[organizationType];
     }
   }
 
   register = asyncHandler(async (req: Request, res: Response) => {
     try {
       if (!this.userModel) {
-        await this.initializeUserModel();
+        await this.initializeModels();
       }
 
       const userData: CreateUserRequest = req.body;
@@ -53,9 +94,25 @@ export class AuthController {
         throw new AppError('You must accept the terms and conditions', 400);
       }
       
-      logger.info(`📝 User registration attempt: ${userData.username} (${userData.email}) - Org: ${userData.organizationName}`);
+      // Auto-assign role based on organization type and existing users
+      const defaultRole = await this.getDefaultRoleForUser(userData.organizationType, userData.organizationId);
+      userData.role = defaultRole as any; // Override any manually provided role
+      
+      logger.info(`📝 User registration attempt: ${userData.username} (${userData.email}) - Org: ${userData.organizationName} - Auto-assigned role: ${defaultRole}`);
       
       const user = await this.userModel.createUser(userData);
+      
+      // Initialize user journey for new user
+      if (this.userJourneyModel) {
+        try {
+          // Initialize user journey
+          await this.userJourneyModel.startUserJourney(user.id, userData.organizationId, userData.organizationType);
+          
+          logger.info(`✅ User journey initialized for user: ${user.username}`);
+        } catch (journeyError) {
+          logger.error('⚠️ Failed to initialize user journey, but user created:', journeyError);
+        }
+      }
       
       // Generate tokens for immediate login
       const tokenPayload: JWTPayload = {
@@ -109,7 +166,7 @@ export class AuthController {
   login = asyncHandler(async (req: Request, res: Response) => {
     try {
       if (!this.userModel) {
-        await this.initializeUserModel();
+        await this.initializeModels();
       }
 
       const { username, password, mfaCode, rememberMe }: LoginRequest = req.body;
@@ -243,7 +300,7 @@ export class AuthController {
   forgotPassword = asyncHandler(async (req: Request, res: Response) => {
     try {
       if (!this.userModel) {
-        await this.initializeUserModel();
+        await this.initializeModels();
       }
 
       const { email }: PasswordResetRequest = req.body;
@@ -300,7 +357,7 @@ export class AuthController {
   resetPassword = asyncHandler(async (req: Request, res: Response) => {
     try {
       if (!this.userModel) {
-        await this.initializeUserModel();
+        await this.initializeModels();
       }
 
       const { token, newPassword, confirmPassword }: PasswordResetConfirm = req.body;
@@ -345,7 +402,7 @@ export class AuthController {
   changePassword = asyncHandler(async (req: Request, res: Response) => {
     try {
       if (!this.userModel) {
-        await this.initializeUserModel();
+        await this.initializeModels();
       }
 
       if (!req.user) {
@@ -398,7 +455,7 @@ export class AuthController {
   updateProfile = asyncHandler(async (req: Request, res: Response) => {
     try {
       if (!this.userModel) {
-        await this.initializeUserModel();
+        await this.initializeModels();
       }
 
       if (!req.user) {
@@ -433,7 +490,7 @@ export class AuthController {
   getCurrentUser = asyncHandler(async (req: Request, res: Response) => {
     try {
       if (!this.userModel) {
-        await this.initializeUserModel();
+        await this.initializeModels();
       }
 
       if (!req.user) {
@@ -491,7 +548,7 @@ export class AuthController {
   refreshToken = asyncHandler(async (req: Request, res: Response) => {
     try {
       if (!this.userModel) {
-        await this.initializeUserModel();
+        await this.initializeModels();
       }
 
       const { refreshToken } = req.body;

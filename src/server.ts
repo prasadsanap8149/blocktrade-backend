@@ -17,6 +17,11 @@ import { documentRoutes } from './routes/document.routes';
 import { kycRoutes } from './routes/kyc.routes';
 import { userRoutes } from './routes/user.routes';
 import { setupSwagger } from './config/swagger';
+import { 
+  initializeProduction, 
+  initializeDevelopment, 
+  initializeTesting 
+} from './utils/databaseInitializer';
 
 const app = express();
 const server = createServer(app);
@@ -68,6 +73,7 @@ app.use(`${apiPrefix}/lc`, letterOfCreditRoutes);
 app.use(`${apiPrefix}/documents`, documentRoutes);
 app.use(`${apiPrefix}/kyc`, kycRoutes);
 app.use(`${apiPrefix}/users`, userRoutes);
+// Role routes will be added after database connection
 
 // Swagger documentation (development only)
 if (NODE_ENV === 'development' && process.env.ENABLE_SWAGGER === 'true') {
@@ -109,6 +115,16 @@ async function startServer() {
     logger.info('🔌 Connecting to MongoDB...');
     await database.connect();
     
+    // Initialize database with role system
+    logger.info('🎭 Initializing database and role system...');
+    if (NODE_ENV === 'production') {
+      await initializeProduction();
+    } else if (NODE_ENV === 'test') {
+      await initializeTesting();
+    } else {
+      await initializeDevelopment();
+    }
+    
     // Initialize models and create indexes
     const { AuthController } = await import('./controllers/auth.controller');
     const { default: LetterOfCreditController } = await import('./controllers/letterOfCredit.controller');
@@ -116,16 +132,29 @@ async function startServer() {
     const authController = new AuthController();
     const lcController = new LetterOfCreditController();
     
-    await authController.initializeUserModel();
+    await authController.initializeModels();
     await lcController.initializeLCModel();
+    
+    // Now that database is connected, we can safely import and setup role routes
+    const { default: roleRoutes } = await import('./routes/role.routes');
+    app.use(apiPrefix, roleRoutes); // Role management routes
     
     server.listen(PORT, () => {
       logger.info(`🚀 BlockTrade Backend Server running on port ${PORT}`);
       logger.info(`📑 Environment: ${NODE_ENV}`);
       logger.info(`🌐 API Base URL: http://localhost:${PORT}${apiPrefix}`);
+      logger.info(`🎭 Role Management API: http://localhost:${PORT}${apiPrefix}/roles`);
+      logger.info(`🚀 User Journey API: http://localhost:${PORT}${apiPrefix}/roles/journey`);
       
       if (NODE_ENV === 'development' && process.env.ENABLE_SWAGGER === 'true') {
         logger.info(`📖 API Documentation: http://localhost:${PORT}/api-docs`);
+      }
+      
+      if (NODE_ENV === 'development') {
+        logger.info('💡 Demo credentials created - check logs for details');
+        logger.info('🔑 Platform Admin: admin@blocktrade.com');
+        logger.info('🔑 Demo Users: bank_admin@demobank.com, corp_admin@democorp.com');
+        logger.info('🔒 Default password: Demo@2024! (change immediately)');
       }
     });
   } catch (error) {
