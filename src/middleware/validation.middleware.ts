@@ -37,6 +37,14 @@ export const validationSchemas = {
         'string.pattern.base': 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character',
         'any.required': 'Password is required',
       }),
+
+    confirmPassword: Joi.string()
+      .valid(Joi.ref('password'))
+      .required()
+      .messages({
+        'any.only': 'Password confirmation does not match password',
+        'any.required': 'Password confirmation is required',
+      }),
     
     firstName: Joi.string()
       .min(1)
@@ -58,6 +66,7 @@ export const validationSchemas = {
         'any.required': 'Last name is required',
       }),
     
+    // Role is optional - will be auto-assigned based on organization type and existing users
     role: Joi.string()
       .valid(
         'bank_admin', 
@@ -71,18 +80,17 @@ export const validationSchemas = {
         'insurance_admin', 
         'insurance_user'
       )
-      .required()
+      .optional()
       .messages({
         'any.only': 'Role must be one of: bank_admin, bank_officer, corporate_admin, corporate_user, nbfc_admin, nbfc_user, logistics_admin, logistics_user, insurance_admin, insurance_user',
-        'any.required': 'Role is required',
       }),
     
+    // Organization ID is optional for new organization creation
     organizationId: Joi.string()
-      .uuid()
-      .required()
+      .pattern(new RegExp('^[0-9a-fA-F]{24}$'))
+      .optional()
       .messages({
-        'string.uuid': 'Organization ID must be a valid UUID',
-        'any.required': 'Organization ID is required',
+        'string.pattern.base': 'Organization ID must be a valid MongoDB ObjectId',
       }),
     
     organizationName: Joi.string()
@@ -102,6 +110,91 @@ export const validationSchemas = {
         'any.only': 'Organization type must be one of: bank, nbfc, corporate, logistics, insurance',
         'any.required': 'Organization type is required',
       }),
+
+    // Flag to indicate if creating new organization or joining existing
+    isNewOrganization: Joi.boolean()
+      .optional()
+      .default(false)
+      .messages({
+        'boolean.base': 'isNewOrganization must be a boolean value',
+      }),
+
+    // Required fields for new organization creation
+    organizationRegistrationNumber: Joi.string()
+      .max(100)
+      .when('isNewOrganization', {
+        is: true,
+        then: Joi.optional(),
+        otherwise: Joi.optional()
+      })
+      .messages({
+        'string.max': 'Organization registration number must be less than 100 characters',
+      }),
+
+    organizationCountryCode: Joi.string()
+      .length(2)
+      .uppercase()
+      .when('isNewOrganization', {
+        is: true,
+        then: Joi.required(),
+        otherwise: Joi.optional()
+      })
+      .messages({
+        'string.length': 'Country code must be exactly 2 characters',
+        'any.required': 'Country code is required for new organization',
+      }),
+
+    organizationAddress: Joi.object({
+      street: Joi.string().max(100).required(),
+      city: Joi.string().max(50).required(),
+      state: Joi.string().max(50).required(),
+      country: Joi.string().max(50).required(),
+      postalCode: Joi.string().max(20).required(),
+    }).when('isNewOrganization', {
+      is: true,
+      then: Joi.required(),
+      otherwise: Joi.optional()
+    }).messages({
+      'any.required': 'Organization address is required for new organization',
+    }),
+
+    organizationContactPerson: Joi.object({
+      name: Joi.string().max(100).optional(),
+      email: Joi.string().email().optional(),
+      phone: Joi.string().pattern(new RegExp('^[+]?[1-9]\\d{1,14}$')).optional(),
+    }).optional(),
+
+    organizationSwiftCode: Joi.string()
+      .length(11)
+      .uppercase()
+      .when('organizationType', {
+        is: 'bank',
+        then: Joi.optional(),
+        otherwise: Joi.optional()
+      })
+      .messages({
+        'string.length': 'SWIFT code must be exactly 11 characters',
+      }),
+
+    organizationLicenseNumber: Joi.string()
+      .max(100)
+      .optional()
+      .messages({
+        'string.max': 'License number must be less than 100 characters',
+      }),
+
+    // Terms and conditions acceptance
+    acceptTerms: Joi.boolean()
+      .valid(true)
+      .required()
+      .messages({
+        'any.only': 'You must accept the terms and conditions',
+        'any.required': 'Terms acceptance is required',
+      }),
+
+    agreeToMarketing: Joi.boolean()
+      .optional()
+      .default(false),
     
     permissions: Joi.array()
       .items(Joi.string())
@@ -124,6 +217,41 @@ export const validationSchemas = {
       country: Joi.string().max(50).required(),
       postalCode: Joi.string().max(20).required(),
     }).optional(),
+
+    timezone: Joi.string()
+      .optional()
+      .messages({
+        'string.base': 'Timezone must be a valid timezone string',
+      }),
+
+    language: Joi.string()
+      .valid('en', 'es', 'fr', 'de', 'pt', 'zh', 'ja', 'ko', 'ar', 'hi')
+      .optional()
+      .default('en')
+      .messages({
+        'any.only': 'Language must be one of: en, es, fr, de, pt, zh, ja, ko, ar, hi',
+      }),
+  }).custom((value, helpers) => {
+    // Custom validation: if not creating new organization, organizationId is required
+    if (!value.isNewOrganization && !value.organizationId) {
+      return helpers.error('custom.organizationIdRequired');
+    }
+    
+    // Custom validation: if creating new organization, certain fields are required
+    if (value.isNewOrganization) {
+      if (!value.organizationCountryCode) {
+        return helpers.error('custom.countryCodeRequired');
+      }
+      if (!value.organizationAddress) {
+        return helpers.error('custom.organizationAddressRequired');
+      }
+    }
+    
+    return value;
+  }, 'Registration validation').messages({
+    'custom.organizationIdRequired': 'Organization ID is required when joining an existing organization',
+    'custom.countryCodeRequired': 'Country code is required when creating a new organization',
+    'custom.organizationAddressRequired': 'Organization address is required when creating a new organization',
   }),
 
   login: Joi.object({

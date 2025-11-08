@@ -32,6 +32,85 @@ const loginLimiter = rateLimit({
 
 /**
  * @swagger
+ * /api/auth/organizations:
+ *   get:
+ *     summary: Get available organizations for registration
+ *     tags: [Authentication]
+ *     parameters:
+ *       - in: query
+ *         name: type
+ *         schema:
+ *           type: string
+ *           enum: [bank, nbfc, corporate, logistics, insurance]
+ *         description: Filter by organization type
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search organizations by name or registration number
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *         description: Number of organizations per page
+ *     responses:
+ *       200:
+ *         description: Organizations retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     organizations:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: string
+ *                           name:
+ *                             type: string
+ *                           type:
+ *                             type: string
+ *                           countryCode:
+ *                             type: string
+ *                           kycStatus:
+ *                             type: string
+ *                     pagination:
+ *                       type: object
+ *                       properties:
+ *                         page:
+ *                           type: number
+ *                         limit:
+ *                           type: number
+ *                         total:
+ *                           type: number
+ *                         pages:
+ *                           type: number
+ *       500:
+ *         description: Server error
+ */
+router.get(
+  '/organizations',
+  authController.getAvailableOrganizations
+);
+
+/**
+ * @swagger
  * /api/auth/register:
  *   post:
  *     summary: Register a new user
@@ -46,12 +125,12 @@ const loginLimiter = rateLimit({
  *               - username
  *               - email
  *               - password
+ *               - confirmPassword
  *               - firstName
  *               - lastName
- *               - role
- *               - organizationId
  *               - organizationName
  *               - organizationType
+ *               - acceptTerms
  *             properties:
  *               username:
  *                 type: string
@@ -64,19 +143,20 @@ const loginLimiter = rateLimit({
  *                 type: string
  *                 minLength: 8
  *                 example: SecurePass123!
+ *               confirmPassword:
+ *                 type: string
+ *                 minLength: 8
+ *                 example: SecurePass123!
  *               firstName:
  *                 type: string
  *                 example: John
  *               lastName:
  *                 type: string
  *                 example: Doe
- *               role:
- *                 type: string
- *                 enum: [bank_admin, bank_officer, corporate_admin, corporate_user, nbfc_admin, nbfc_user, logistics_admin, logistics_user, insurance_admin, insurance_user]
- *                 example: bank_officer
  *               organizationId:
  *                 type: string
  *                 format: uuid
+ *                 description: Optional - provide if joining existing organization
  *                 example: 123e4567-e89b-12d3-a456-426614174000
  *               organizationName:
  *                 type: string
@@ -85,10 +165,59 @@ const loginLimiter = rateLimit({
  *                 type: string
  *                 enum: [bank, nbfc, corporate, logistics, insurance]
  *                 example: bank
+ *               isNewOrganization:
+ *                 type: boolean
+ *                 description: Set to true when creating a new organization
+ *                 example: true
+ *               organizationRegistrationNumber:
+ *                 type: string
+ *                 description: Required for new organizations
+ *                 example: REG123456789
+ *               organizationCountryCode:
+ *                 type: string
+ *                 description: Two-letter country code for new organizations
+ *                 example: US
+ *               organizationAddress:
+ *                 type: object
+ *                 description: Address for new organizations
+ *                 properties:
+ *                   street:
+ *                     type: string
+ *                   city:
+ *                     type: string
+ *                   state:
+ *                     type: string
+ *                   country:
+ *                     type: string
+ *                   postalCode:
+ *                     type: string
+ *               organizationContactPerson:
+ *                 type: object
+ *                 description: Contact person for new organizations
+ *                 properties:
+ *                   name:
+ *                     type: string
+ *                   email:
+ *                     type: string
+ *                   phone:
+ *                     type: string
+ *               organizationSwiftCode:
+ *                 type: string
+ *                 description: SWIFT code for banks (11 characters)
+ *                 example: BOFAUS3NXXX
+ *               organizationLicenseNumber:
+ *                 type: string
+ *                 description: License number for regulated organizations
+ *                 example: LIC789012345
+ *               acceptTerms:
+ *                 type: boolean
+ *                 description: Must be true
+ *                 example: true
  *               permissions:
  *                 type: array
  *                 items:
  *                   type: string
+ *                 description: Auto-assigned based on role
  *                 example: ["lc:create", "lc:view", "document:verify"]
  *               phone:
  *                 type: string

@@ -16,6 +16,7 @@ import { letterOfCreditRoutes } from './routes/letterOfCredit.routes';
 import { documentRoutes } from './routes/document.routes';
 import { kycRoutes } from './routes/kyc.routes';
 import { userRoutes } from './routes/user.routes';
+import { dashboardRoutes } from './routes/dashboard.routes';
 import { setupSwagger } from './config/swagger';
 import { 
   initializeProduction, 
@@ -73,6 +74,7 @@ app.use(`${apiPrefix}/lc`, letterOfCreditRoutes);
 app.use(`${apiPrefix}/documents`, documentRoutes);
 app.use(`${apiPrefix}/kyc`, kycRoutes);
 app.use(`${apiPrefix}/users`, userRoutes);
+app.use(`${apiPrefix}/dashboard`, dashboardRoutes);
 // Role routes will be added after database connection
 
 // Swagger documentation (development only)
@@ -144,7 +146,8 @@ async function startServer() {
       logger.info(`📑 Environment: ${NODE_ENV}`);
       logger.info(`🌐 API Base URL: http://localhost:${PORT}${apiPrefix}`);
       logger.info(`🎭 Role Management API: http://localhost:${PORT}${apiPrefix}/roles`);
-      logger.info(`🚀 User Journey API: http://localhost:${PORT}${apiPrefix}/roles/journey`);
+      logger.info(`🚀 User Journey API: http://localhost:${PORT}${apiPrefix}/users/:userId/journey`);
+      logger.info(`📊 Dashboard API: http://localhost:${PORT}${apiPrefix}/dashboard`);
       
       if (NODE_ENV === 'development' && process.env.ENABLE_SWAGGER === 'true') {
         logger.info(`📖 API Documentation: http://localhost:${PORT}/api-docs`);

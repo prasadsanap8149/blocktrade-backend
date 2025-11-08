@@ -104,7 +104,7 @@ export interface CreateUserRequest {
   firstName: string;
   lastName: string;
   role?: UserRole; // Made optional since we auto-assign based on organization type
-  organizationId: string;
+  organizationId?: string; // Made optional for new organization creation
   organizationName: string;
   organizationType: OrganizationType;
   permissions?: string[];
@@ -114,6 +114,19 @@ export interface CreateUserRequest {
   language?: string;
   acceptTerms: boolean; // Added for legal compliance
   agreeToMarketing?: boolean;
+  
+  // Optional fields for creating new organization
+  isNewOrganization?: boolean;
+  organizationRegistrationNumber?: string;
+  organizationCountryCode?: string;
+  organizationAddress?: Address;
+  organizationContactPerson?: {
+    name?: string;
+    email?: string;
+    phone?: string;
+  };
+  organizationSwiftCode?: string;
+  organizationLicenseNumber?: string;
 }
 
 export interface UpdateUserRequest {

@@ -1,8 +1,35 @@
-# BlockTrade Backend API - Authentication System
+# BlockTrade SaaS Platform - Multi-Tenant Trade Finance System
 
 ## Overview
 
-The BlockTrade backend provides a comprehensive trade finance platform with blockchain integration. The authentication system supports role-based access control for different organization types in the trade finance ecosystem.
+BlockTrade is a comprehensive multi-tenant SaaS trade finance platform designed to serve banks, NBFCs, corporate clients, logistics providers, and insurance companies. The platform features an advanced role management system with hierarchical permissions, guided user onboarding, and complete Letter of Credit operations.
+
+## 🌟 Key SaaS Features
+
+### 🔐 Advanced Role Management System
+
+- **Multi-Level Hierarchy**: Platform → Organization → Entity-specific roles
+- **50+ Granular Permissions** across all business domains
+- **Role Inheritance** and permission aggregation
+- **Temporary & Permanent** role assignments with restrictions
+- **Auto-Role Assignment**: Automatic role assignment based on organization type and user count
+  - First user in organization → Admin role (bank_admin, corporate_admin, etc.)
+  - Subsequent users → Standard role (bank_officer, corporate_user, etc.)
+
+### 👥 5-Step User Onboarding Journey
+
+- **Organization Setup**: Role assignment and department structure
+- **Profile Completion**: Personal information and contact details
+- **Security Setup**: Password policies, MFA, and security questions
+- **Preferences Setup**: Notifications, themes, and language settings
+- **Training Completion**: Compliance modules and acknowledgments
+
+### 🏢 Multi-Tenant Architecture
+
+- **Organization-based Data Isolation** for complete tenant separation
+- **Cross-Organization Permission Control** with strict access boundaries
+- **Scalable Database Schema** with performance optimization
+- **Audit Logging** for all role changes and access patterns
 
 ## 🚀 Quick Start
 
@@ -150,28 +177,37 @@ npm run test:simple
 npm run test:auth
 ```
 
-## 🏢 Organization Types & Roles
+## �️ Multi-Level Role Hierarchy
 
-### Organization Types
+### Platform Level (Highest Authority)
 
-- **Bank**: Traditional banks handling LC issuance
-- **NBFC**: Non-Banking Financial Companies
-- **Corporate**: Import/export companies
-- **Logistics**: Shipping and logistics providers
-- **Insurance**: Trade insurance providers
+- **platform_super_admin**: Complete platform control across all organizations
+- **platform_admin**: Platform administration and multi-tenant management
+- **platform_support**: Support and monitoring across organizations
 
-### User Roles
+### Organization Level (Multi-Tenant)
 
-- **bank_admin**: Full bank administration access
-- **bank_officer**: Bank operations and LC management
-- **corporate_admin**: Corporate organization management
-- **corporate_user**: Corporate LC requests and tracking
-- **nbfc_admin**: NBFC administration
-- **nbfc_user**: NBFC operations
-- **logistics_admin**: Logistics management
-- **logistics_user**: Shipment tracking and updates
-- **insurance_admin**: Insurance policy management
-- **insurance_user**: Insurance claims and tracking
+- **organization_super_admin**: Complete organization management and oversight
+- **organization_admin**: User and role management within organization
+- **organization_manager**: Department management and team coordination
+- **organization_user**: Standard business operations and workflows
+- **organization_viewer**: Read-only access to organization data
+
+### Entity-Specific Level (Business Context)
+
+- **Bank Roles**: `bank_admin`, `bank_officer`, `bank_specialist`
+- **Corporate Roles**: `corporate_admin`, `corporate_manager`, `corporate_user`
+- **NBFC Roles**: `nbfc_admin`, `nbfc_manager`, `nbfc_user`
+- **Logistics Roles**: `logistics_admin`, `logistics_manager`, `logistics_user`
+- **Insurance Roles**: `insurance_admin`, `insurance_manager`, `insurance_user`
+
+### Organization Types Support
+
+- **Bank**: LC issuance, verification, and settlement
+- **NBFC**: Alternative financing and credit solutions
+- **Corporate**: Import/export operations and trade requests
+- **Logistics**: Shipping, tracking, and cargo management
+- **Insurance**: Policy management and claims processing
 
 ## 🔐 Authentication Endpoints
 
@@ -273,32 +309,95 @@ Granular permissions for different operations:
 - **User Management**: create, view, edit, delete
 - **System Operations**: audit, backup, system_config
 
-## 🧪 Testing
+## 📝 Updated Registration Process
 
-### Test Credentials (Development)
+### New Registration Features
+
+- **Optional Role Field**: Roles are now automatically assigned based on organization type and user count
+- **Optional Organization ID**: Required only when joining existing organizations
+- **Smart Organization Handling**: Create new organizations or join existing ones
+- **Enhanced Validation**: Comprehensive edge case handling and input validation
+- **Terms Acceptance**: Mandatory terms and conditions acceptance
+- **Password Confirmation**: Client-side and server-side password matching
+
+### Registration Flow
+
+1. **New Organization**: First user becomes admin, creates organization structure
+2. **Existing Organization**: Subsequent users get standard roles, join existing structure
+3. **Auto-Role Assignment**: Based on organization type and user position
+4. **Immediate Login**: JWT tokens provided upon successful registration
+
+### Test Registration Process
+
+```bash
+# Run comprehensive registration tests
+npm run test:registration
+
+# Test specific scenarios
+npm run dev  # Start server
+# Then use Postman collection: blocktrade-enhanced-api.postman_collection.json
+```
+
+## 🧪 Testing & Demo Accounts
+
+### Platform Admin Credentials
 
 ```javascript
-// Bank Admin
+// Platform Super Admin (Complete System Control)
 {
-  username: 'sarah_admin',
-  password: 'SecurePass123!',
-  role: 'bank_admin'
-}
-
-// Corporate Admin
-{
-  username: 'michael_admin',
-  password: 'SecurePass123!',
-  role: 'corporate_admin'
-}
-
-// NBFC Admin
-{
-  username: 'rajesh_admin',
-  password: 'SecurePass123!',
-  role: 'nbfc_admin'
+  username: 'platform_admin',
+  password: 'BlockTrade@2024!',
+  role: 'platform_super_admin'
 }
 ```
+
+### Demo Organization Accounts
+
+```javascript
+// Demo International Bank
+{
+  username: 'bank_admin@demobank.com',
+  password: 'Demo@2024!',
+  role: 'bank_admin',
+  organization: 'Demo International Bank'
+}
+
+// Demo Trading Corporation
+{
+  username: 'corp_admin@democorp.com',
+  password: 'Demo@2024!',
+  role: 'corporate_admin',
+  organization: 'Demo Trading Corporation'
+}
+
+// Demo Financial Services (NBFC)
+{
+  username: 'nbfc_admin@demofinance.com',
+  password: 'Demo@2024!',
+  role: 'nbfc_admin',
+  organization: 'Demo Financial Services'
+}
+
+// Demo Logistics Solutions
+{
+  username: 'logistics_admin@demologistics.com',
+  password: 'Demo@2024!',
+  role: 'logistics_admin',
+  organization: 'Demo Logistics Solutions'
+}
+
+// Demo Insurance Group
+{
+  username: 'insurance_admin@demoinsurance.com',
+  password: 'Demo@2024!',
+  role: 'insurance_admin',
+  organization: 'Demo Insurance Group'
+}
+```
+
+### User Journey Testing
+
+Each demo account can create new users and test the complete 5-step onboarding journey with role assignments and permission validation.
 
 ### Sample API Calls
 

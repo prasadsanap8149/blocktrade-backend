@@ -1,7 +1,9 @@
 import { Request, Response } from 'express';
 import { randomBytes } from 'crypto';
+import { v4 as uuidv4 } from 'uuid';
 import { asyncHandler, AppError } from '../middleware/errorHandler';
 import UserModel from '../models/User.model';
+import { OrganizationModel } from '../models/Organization.model';
 import { RoleModel } from '../models/Role.model';
 import { UserJourneyModel } from '../models/UserJourney.model';
 import { authService } from '../services/auth.service';
@@ -17,11 +19,13 @@ import {
   UpdateProfileRequest
 } from '../types/user.types';
 import { OrganizationType, OrganizationRole, EntitySpecificRole, UserJourneyStep } from '../types/role.types';
+import { CreateOrganizationRequest, Address, ContactPerson } from '../types/organization.types';
 import { logger } from '../utils/logger';
 import { database } from '../config/database';
 
 export class AuthController {
   private userModel!: UserModel;
+  private organizationModel!: OrganizationModel;
   private roleModel!: RoleModel;
   private userJourneyModel!: UserJourneyModel;
 
@@ -34,11 +38,67 @@ export class AuthController {
     try {
       await database.connect();
       this.userModel = new UserModel();
+      this.organizationModel = new OrganizationModel();
       this.roleModel = new RoleModel();
       this.userJourneyModel = new UserJourneyModel();
       await this.userModel.createIndexes();
+      await this.organizationModel.createIndexes();
     } catch (error) {
       logger.error('❌ Failed to initialize models:', error);
+    }
+  }
+
+  /**
+   * Creates a new organization during user registration
+   */
+  private async createOrganization(userData: CreateUserRequest): Promise<string> {
+    try {
+      // Ensure we have required address data
+      const baseAddress = userData.organizationAddress || {
+        street: '123 Main Street',
+        city: 'New York',
+        state: 'NY',
+        postalCode: '10001',
+        country: 'USA'
+      };
+
+      const defaultAddress: Address = {
+        street: baseAddress.street,
+        city: baseAddress.city,
+        state: baseAddress.state,
+        postalCode: baseAddress.postalCode,
+        country: baseAddress.country,
+        coordinates: {
+          latitude: 40.7128,
+          longitude: -74.0060
+        }
+      };
+
+      // Ensure we have required contact person data with designation
+      const defaultContactPerson: ContactPerson = {
+        name: userData.organizationContactPerson?.name || `${userData.firstName} ${userData.lastName}`,
+        email: userData.organizationContactPerson?.email || userData.email,
+        phone: userData.organizationContactPerson?.phone || userData.phone || '+1-555-0123',
+        designation: 'CEO' // Default designation for organization creator
+      };
+
+      const organizationData: CreateOrganizationRequest = {
+        name: userData.organizationName,
+        type: userData.organizationType,
+        registrationNumber: userData.organizationRegistrationNumber,
+        countryCode: userData.organizationCountryCode || 'US',
+        address: userData.organizationAddress || defaultAddress,
+        contactPerson: defaultContactPerson,
+        swiftCode: userData.organizationSwiftCode,
+        licenseNumber: userData.organizationLicenseNumber
+      };
+
+      const organization = await this.organizationModel.createOrganization(organizationData);
+      logger.info(`🏢 New organization created during registration: ${organization.name} (${organization.id})`);
+      return organization.id;
+    } catch (error) {
+      logger.error('❌ Error creating organization during registration:', error);
+      throw new AppError('Failed to create organization', 500);
     }
   }
 
@@ -78,39 +138,85 @@ export class AuthController {
 
   register = asyncHandler(async (req: Request, res: Response) => {
     try {
-      if (!this.userModel) {
+      if (!this.userModel || !this.organizationModel) {
         await this.initializeModels();
       }
 
       const userData: CreateUserRequest = req.body;
       
-      // Validate password confirmation
-      if (userData.password !== userData.confirmPassword) {
-        throw new AppError('Password confirmation does not match', 400);
+      logger.info(`📝 Registration attempt: ${userData.username} (${userData.email}) - Organization: ${userData.organizationName}`);
+
+      // Check if user already exists
+      const existingUserByEmail = await this.userModel.findByEmail(userData.email);
+      if (existingUserByEmail) {
+        logger.warn(`❌ Registration failed - Email already exists: ${userData.email}`);
+        throw new AppError('A user with this email address already exists', 409);
       }
 
-      // Validate terms acceptance
-      if (!userData.acceptTerms) {
-        throw new AppError('You must accept the terms and conditions', 400);
+      const existingUserByUsername = await this.userModel.findByUsername(userData.username);
+      if (existingUserByUsername) {
+        logger.warn(`❌ Registration failed - Username already exists: ${userData.username}`);
+        throw new AppError('A user with this username already exists', 409);
+      }
+
+      let organizationId = userData.organizationId;
+      let organizationInfo = null;
+      
+      // Handle organization logic
+      if (userData.isNewOrganization || !organizationId) {
+        // Creating new organization
+        logger.info(`🏢 Creating new organization: ${userData.organizationName}`);
+        
+        // Check if organization name already exists
+        const existingOrgByName = await this.organizationModel.findByName(userData.organizationName);
+        if (existingOrgByName) {
+          throw new AppError(`An organization with the name "${userData.organizationName}" already exists. Please choose a different name or join the existing organization.`, 409);
+        }
+
+        organizationId = await this.createOrganization(userData);
+        userData.organizationId = organizationId;
+        organizationInfo = await this.organizationModel.findById(organizationId);
+        
+        logger.info(`✅ New organization created: ${userData.organizationName} (${organizationId})`);
+      } else {
+        // Joining existing organization
+        logger.info(`🏢 Joining existing organization: ${organizationId}`);
+        
+        organizationInfo = await this.organizationModel.findById(organizationId);
+        if (!organizationInfo) {
+          throw new AppError('Organization not found. Please create a new organization or provide a valid organization ID.', 404);
+        }
+        
+        // Verify organization type matches
+        if (organizationInfo.type !== userData.organizationType) {
+          throw new AppError(`Organization type mismatch. The selected organization is of type "${organizationInfo.type}" but you specified "${userData.organizationType}".`, 400);
+        }
+
+        // Check if organization is active and accepting new members
+        if (!organizationInfo.isActive) {
+          throw new AppError('The selected organization is not currently accepting new members.', 403);
+        }
+
+        // Update organization name in userData to match existing organization
+        userData.organizationName = organizationInfo.name;
       }
       
       // Auto-assign role based on organization type and existing users
-      const defaultRole = await this.getDefaultRoleForUser(userData.organizationType, userData.organizationId);
+      const defaultRole = await this.getDefaultRoleForUser(userData.organizationType, organizationId);
       userData.role = defaultRole as any; // Override any manually provided role
       
-      logger.info(`📝 User registration attempt: ${userData.username} (${userData.email}) - Org: ${userData.organizationName} - Auto-assigned role: ${defaultRole}`);
+      logger.info(`🎭 Auto-assigned role: ${defaultRole} for organization type: ${userData.organizationType}`);
       
+      // Create user with all validation passed
       const user = await this.userModel.createUser(userData);
       
       // Initialize user journey for new user
       if (this.userJourneyModel) {
         try {
-          // Initialize user journey
-          await this.userJourneyModel.startUserJourney(user.id, userData.organizationId, userData.organizationType);
-          
-          logger.info(`✅ User journey initialized for user: ${user.username}`);
+          await this.userJourneyModel.startUserJourney(user.id, organizationId, userData.organizationType);
+          logger.info(`🚀 User journey initialized for user: ${user.username}`);
         } catch (journeyError) {
-          logger.error('⚠️ Failed to initialize user journey, but user created:', journeyError);
+          logger.error('⚠️ Failed to initialize user journey, but user created successfully:', journeyError);
         }
       }
       
@@ -137,29 +243,74 @@ export class AuthController {
           lastName: user.lastName,
           username: user.username,
           organizationName: user.organizationName,
+          isNewOrganization: userData.isNewOrganization || false,
+          role: user.role,
         }).catch(error => {
           logger.error('❌ Failed to send welcome email:', error);
         });
       }
       
-      logger.info(`✅ User registered successfully: ${user.username} - Role: ${user.role} - Org: ${user.organizationName}`);
+      logger.info(`✅ User registered successfully: ${user.username} - Role: ${user.role} - Org: ${user.organizationName} (${organizationId})`);
       
       res.status(201).json({
         success: true,
-        message: 'User registered successfully',
+        message: `Registration successful! Welcome to BlockTrade. You have been assigned the role of ${user.role} in ${user.organizationName}.`,
         data: {
-          user,
+          user: {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            role: user.role,
+            organizationId: organizationId,
+            organizationName: user.organizationName,
+            organizationType: user.organizationType,
+            permissions: user.permissions,
+            phone: user.phone,
+            address: user.address,
+            isActive: user.isActive,
+            emailVerified: user.emailVerified,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt,
+          },
           tokens,
+          organizationInfo: {
+            id: organizationInfo?.id,
+            name: organizationInfo?.name,
+            type: organizationInfo?.type,
+            isNewOrganization: userData.isNewOrganization || false,
+          },
         },
       });
     } catch (error: any) {
       logger.error('❌ Registration error:', error);
       
-      if (error.message.includes('already exists')) {
-        throw new AppError('User with this username or email already exists', 409);
+      // Handle specific error cases
+      if (error.code === 11000) {
+        // MongoDB duplicate key error
+        const duplicateField = Object.keys(error.keyPattern || {})[0];
+        const duplicateValue = error.keyValue ? error.keyValue[duplicateField] : 'unknown';
+        
+        if (duplicateField === 'email') {
+          throw new AppError('A user with this email address already exists', 409);
+        } else if (duplicateField === 'username') {
+          throw new AppError('A user with this username already exists', 409);
+        } else {
+          throw new AppError(`Duplicate ${duplicateField}: ${duplicateValue}`, 409);
+        }
       }
       
-      throw new AppError('Registration failed', 400);
+      if (error instanceof AppError) {
+        throw error;
+      }
+      
+      // Generic error handling
+      if (error.message && error.message.includes('validation')) {
+        throw new AppError(`Registration validation failed: ${error.message}`, 400);
+      }
+      
+      throw new AppError('Registration failed. Please check your information and try again.', 500);
     }
   });
 
@@ -176,7 +327,7 @@ export class AuthController {
       logger.info(`🔐 Login attempt: ${username} from ${ipAddress}`);
       
       // Find user by username
-      const user = await this.userModel.findByUsername(username);
+      const user = await this.userModel.findByEmail(username);
       
       if (!user) {
         logger.warn(`❌ Login failed - user not found: ${username}`);
@@ -244,6 +395,33 @@ export class AuthController {
       // Get user response (without password)
       const userResponse = await this.userModel.findById(user._id!.toString());
       
+      // Get organization information
+      let organizationInfo = null;
+      if (user.organizationId) {
+        try {
+          const organization = await this.organizationModel.findById(user.organizationId);
+          if (organization) {
+            organizationInfo = {
+              id: organization.id,
+              name: organization.name,
+              type: organization.type,
+              registrationNumber: organization.registrationNumber,
+              countryCode: organization.countryCode,
+              address: organization.address,
+              contactPerson: organization.contactPerson,
+              swiftCode: organization.swiftCode,
+              licenseNumber: organization.licenseNumber,
+              kycStatus: organization.kycStatus,
+              isActive: organization.isActive,
+              createdAt: organization.createdAt,
+              updatedAt: organization.updatedAt,
+            };
+          }
+        } catch (orgError) {
+          logger.error('❌ Failed to fetch organization info during login:', orgError);
+        }
+      }
+      
       // Send login alert email (async, don't wait for it)
       if (emailService.isEnabled()) {
         emailService.sendLoginAlert(user.email, {
@@ -285,6 +463,7 @@ export class AuthController {
             updatedAt: userResponse.updatedAt,
           } : null,
           tokens,
+          organizationInfo,
         },
       });
     } catch (error: any) {
@@ -608,5 +787,59 @@ export class AuthController {
       message: 'Logout successful',
       data: null,
     });
+  });
+
+  /**
+   * Get available organizations for user registration
+   */
+  getAvailableOrganizations = asyncHandler(async (req: Request, res: Response) => {
+    try {
+      if (!this.organizationModel) {
+        await this.initializeModels();
+      }
+
+      const { type, search, page = 1, limit = 20 } = req.query;
+      const skip = (Number(page) - 1) * Number(limit);
+      
+      const filters: any = { isActive: true };
+      
+      // Filter by organization type if provided
+      if (type) {
+        filters.type = type;
+      }
+      
+      // Add search functionality if needed
+      if (search) {
+        filters.$or = [
+          { name: { $regex: search, $options: 'i' } },
+          { registrationNumber: { $regex: search, $options: 'i' } }
+        ];
+      }
+
+      const result = await this.organizationModel.getAllOrganizations(skip, Number(limit), filters);
+      
+      res.status(200).json({
+        success: true,
+        message: 'Organizations retrieved successfully',
+        data: {
+          organizations: result.organizations.map(org => ({
+            id: org.id,
+            name: org.name,
+            type: org.type,
+            countryCode: org.countryCode,
+            kycStatus: org.kycStatus
+          })),
+          pagination: {
+            page: Number(page),
+            limit: Number(limit),
+            total: result.total,
+            pages: Math.ceil(result.total / Number(limit))
+          }
+        }
+      });
+    } catch (error: any) {
+      logger.error('❌ Error getting available organizations:', error);
+      throw new AppError('Failed to retrieve organizations', 500);
+    }
   });
 }

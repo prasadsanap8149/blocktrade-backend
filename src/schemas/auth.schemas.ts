@@ -66,10 +66,9 @@ export const registerSchema = Joi.object({
 
   organizationId: Joi.string()
     .guid({ version: 'uuidv4' })
-    .required()
+    .optional()
     .messages({
-      'string.guid': 'Organization ID must be a valid UUID',
-      'any.required': 'Organization ID is required'
+      'string.guid': 'Organization ID must be a valid UUID'
     }),
 
   organizationName: Joi.string()
@@ -88,6 +87,82 @@ export const registerSchema = Joi.object({
     .messages({
       'any.only': 'Organization type must be one of: bank, nbfc, corporate, logistics, insurance',
       'any.required': 'Organization type is required'
+    }),
+
+  // Optional fields for creating new organization
+  organizationRegistrationNumber: Joi.string()
+    .optional()
+    .messages({
+      'string.base': 'Organization registration number must be a string'
+    }),
+
+  organizationCountryCode: Joi.string()
+    .length(2)
+    .uppercase()
+    .optional()
+    .messages({
+      'string.length': 'Country code must be 2 characters',
+      'string.uppercase': 'Country code must be uppercase'
+    }),
+
+  organizationAddress: Joi.object({
+    street: Joi.string().max(200).optional(),
+    city: Joi.string().max(100).optional(),
+    state: Joi.string().max(100).optional(),
+    country: Joi.string().max(100).optional(),
+    postalCode: Joi.string().max(20).optional()
+  })
+    .optional()
+    .messages({
+      'object.base': 'Organization address must be an object'
+    }),
+
+  organizationContactPerson: Joi.object({
+    name: Joi.string().max(100).optional(),
+    email: Joi.string().email().optional(),
+    phone: Joi.string().optional()
+  })
+    .optional()
+    .messages({
+      'object.base': 'Organization contact person must be an object'
+    }),
+
+  organizationSwiftCode: Joi.string()
+    .length(11)
+    .uppercase()
+    .optional()
+    .messages({
+      'string.length': 'SWIFT code must be 11 characters',
+      'string.uppercase': 'SWIFT code must be uppercase'
+    }),
+
+  organizationLicenseNumber: Joi.string()
+    .optional()
+    .messages({
+      'string.base': 'Organization license number must be a string'
+    }),
+
+  isNewOrganization: Joi.boolean()
+    .optional()
+    .default(false)
+    .messages({
+      'boolean.base': 'isNewOrganization must be a boolean'
+    }),
+
+  acceptTerms: Joi.boolean()
+    .valid(true)
+    .required()
+    .messages({
+      'any.only': 'You must accept the terms and conditions',
+      'any.required': 'Terms acceptance is required'
+    }),
+
+  confirmPassword: Joi.string()
+    .valid(Joi.ref('password'))
+    .required()
+    .messages({
+      'any.only': 'Password confirmation must match password',
+      'any.required': 'Password confirmation is required'
     }),
 
   permissions: Joi.array()

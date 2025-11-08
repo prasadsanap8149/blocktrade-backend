@@ -68,6 +68,33 @@ export class UserJourneyModel {
     }
   }
 
+  async findByUserId(userId: string): Promise<any | null> {
+    try {
+      const journey = await this.onboardingCollection.findOne({
+        userId
+      });
+
+      if (!journey) {
+        return null;
+      }
+
+      // Transform the data to match the expected format
+      return {
+        userId: journey.userId,
+        totalSteps: 5, // Standard onboarding has 5 steps
+        stepsCompleted: journey.completedSteps || [],
+        currentStep: journey.currentStep || 1,
+        isCompleted: journey.isComplete || false,
+        startedAt: journey.startedAt?.toISOString() || new Date().toISOString(),
+        completedAt: journey.completedAt?.toISOString() || null,
+        lastActivity: journey.startedAt?.toISOString() || new Date().toISOString(),
+      };
+    } catch (error) {
+      logger.error('❌ Error finding user journey by userId:', error);
+      return null;
+    }
+  }
+
   async updateStepData(
     userId: string,
     organizationId: string,

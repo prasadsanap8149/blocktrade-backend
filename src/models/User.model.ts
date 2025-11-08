@@ -43,7 +43,7 @@ export class UserModel {
         firstName: userData.firstName,
         lastName: userData.lastName,
         role: userRole,
-        organizationId: userData.organizationId,
+        organizationId: userData.organizationId!, // organizationId is guaranteed to be set by auth controller
         organizationName: userData.organizationName,
         organizationType: userData.organizationType,
         permissions,

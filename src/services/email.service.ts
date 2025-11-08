@@ -19,6 +19,8 @@ export interface WelcomeEmailData {
   username: string;
   organizationName: string;
   verificationUrl?: string;
+  isNewOrganization?: boolean;
+  role?: string;
 }
 
 export interface PasswordResetEmailData {
@@ -67,7 +69,7 @@ class EmailService {
       });
 
       // Verify connection
-            if (this.transporter) {
+      if (this.transporter) {
         this.transporter.verify((error: any, success: any) => {
           if (error) {
             logger.error('📧 Email service configuration error:', error);
@@ -138,9 +140,20 @@ class EmailService {
               <h3>📋 Account Details:</h3>
               <ul>
                 <li><strong>Username:</strong> ${data.username}</li>
-                <li><strong>Organization:</strong> ${data.organizationName}</li>
+                <li><strong>Organization:</strong> ${data.organizationName} ${data.isNewOrganization ? '(New Organization)' : '(Existing Organization)'}</li>
+                <li><strong>Role:</strong> ${data.role || 'User'}</li>
                 <li><strong>Email:</strong> ${email}</li>
               </ul>
+              
+              ${data.isNewOrganization ? `
+                <div style="background: #d4edda; border: 1px solid #c3e6cb; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                  <strong>🎉 Congratulations!</strong> You have successfully created a new organization on BlockTrade. As the founder, you have administrative privileges to manage your organization.
+                </div>
+              ` : `
+                <div style="background: #d1ecf1; border: 1px solid #bee5eb; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                  <strong>👥 Welcome to the team!</strong> You have joined an existing organization on BlockTrade. Your role and permissions have been assigned by your organization administrator.
+                </div>
+              `}
               
               ${data.verificationUrl ? `
                 <p>Please verify your email address to activate your account:</p>
